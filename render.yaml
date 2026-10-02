@@ -1,0 +1,30 @@
+# Render.com blueprint for DebtFree Coach v2
+services:
+  - type: web
+    name: debtfree-coach
+    runtime: node
+    plan: starter # disks require a paid plan; see README for the free-tier caveat
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    # Persistent disk so the SQLite database survives deploys/restarts.
+    # (Free plans can't attach disks — the DB would reset on each deploy.)
+    disk:
+      name: dfc-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_PATH
+        value: /data/debtfree.db
+      - key: APP_URL
+        value: https://debtfree-coach.onrender.com # ← change to your real URL
+      - key: DEV_AUTO_SUBSCRIBE
+        value: "false"
+      - key: STRIPE_SECRET_KEY
+        sync: false # set in the Render dashboard (use the LIVE secret key)
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false # from the webhook endpoint you create in Stripe
+      - key: STRIPE_PRICE_ID
+        sync: false # price_... of your $9.99/mo recurring price
