@@ -183,3 +183,28 @@ input[type=range]{accent-color:var(--green); margin:1rem 0 .5rem}
 .faq summary{cursor:pointer; font-weight:600}
 .faq p{color:var(--muted); font-size:.92rem; margin:.5rem 0 0}
 .final-cta{text-align:center}
+
+/* ---------- Legal pages ---------- */
+.draft-banner{
+  background:#7c2d12; color:#fed7aa; text-align:center; font-weight:700;
+  padding:.7rem 1rem; font-size:.9rem; border-bottom:2px solid #ea580c;
+}
+.legal-wrap{max-width:680px; margin:0 auto; padding:2rem 1.25rem 3rem}
+.legal-wrap h1{font-size:1.9rem; margin:.5rem 0 1.5rem}
+.legal-wrap h2{font-size:1.15rem; margin:1.75rem 0 .5rem; color:var(--gold)}
+.legal-wrap p, .legal-wrap li{color:var(--text); font-size:.95rem}
+.legal-wrap ul{padding-left:1.25rem}
+.legal-wrap li{margin-bottom:.4rem}
+.legal-wrap .muted{color:var(--muted)}
+.site-footer{
+  text-align:center; padding:1.5rem 1rem 2.5rem; font-size:.85rem;
+  color:var(--muted); border-top:1px solid var(--line);
+}
+.site-footer a{color:var(--blue); text-decoration:none; margin:0 .25rem}
+.site-footer a:hover{text-decoration:underline}
+
+/* ---------- Terms acceptance checkbox ---------- */
+.terms-check{display:flex; gap:.65rem; align-items:flex-start; margin:.9rem 0; text-align:left}
+.terms-check input[type=checkbox]{width:auto; margin:.25rem 0 0; accent-color:var(--green); flex:0 0 auto}
+.terms-check label{font-size:.83rem; color:var(--muted); font-weight:400; margin:0}
+.terms-check a{color:var(--blue)}
