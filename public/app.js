@@ -89,6 +89,7 @@ function setAuthMode(mode) {
   document.querySelectorAll('#screen-auth .seg-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.mode === mode));
   $('auth-submit').textContent = mode === 'login' ? 'Log in →' : 'Create account →';
+  $('terms-check').classList.toggle('hidden', mode !== 'signup');
   $('auth-error').classList.add('hidden');
 }
 function authError(msg) {
@@ -100,9 +101,17 @@ async function doAuth() {
   const email = $('auth-email').value.trim();
   const password = $('auth-pass').value;
   if (!email || !password) { authError('Enter your email and password.'); return; }
+  const body = { email, password };
+  if (authMode === 'signup') {
+    if (!$('auth-terms').checked) {
+      authError('Please read and accept the Terms & Conditions, Privacy Policy, and No-Refund Policy.');
+      return;
+    }
+    body.termsAccepted = true;
+  }
   $('auth-submit').disabled = true;
   try {
-    await api('POST', '/api/auth/' + authMode, { email, password });
+    await api('POST', '/api/auth/' + authMode, body);
     $('auth-pass').value = '';
     await boot();
   } catch (e) { authError(e.message); }
