@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { rateLimit } = require('express-rate-limit');
 const store = require('./db');
+const { TERMS_VERSION } = require('./legal');
 
 const COOKIE_NAME = 'dfc_session';
 const SESSION_DAYS = 30;
@@ -113,10 +114,22 @@ async function signup(req, res) {
   const password = req.body.password;
   if (!validEmail(email)) return res.status(400).json({ error: 'Enter a valid email address.' });
   if (!validPassword(password)) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+  // Terms acceptance is required to create an account — enforced server-side.
+  const termsAccepted = req.body.termsAccepted === true || req.body.termsAccepted === 'true';
+  if (!termsAccepted) {
+    return res.status(400).json({ error: 'Please read and accept the Terms & Conditions, Privacy Policy, and No-Refund Policy to create your account.' });
+  }
   if (store.getUserByEmail(email)) return res.status(409).json({ error: 'That email is already registered — try logging in.' });
 
   const hash = await bcrypt.hash(password, 10);
   const user = store.createUser(email, hash);
+
+  // Record the legal acceptance (versioned) — non-fatal if storage fails.
+  try {
+    store.recordTermsAcceptance(user.id, TERMS_VERSION);
+  } catch (e) {
+    console.error('Failed to record terms acceptance for user', user.id, e.message);
+  }
 
   // Dev convenience: without Stripe keys, grant a local 7-day trial so the
   // full flow is testable. NEVER enable in production.
