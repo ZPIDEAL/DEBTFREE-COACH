@@ -119,6 +119,10 @@
       <p class="fineprint">DebtFree Coach provides financial <strong>education</strong>, not personalized investment advice. Investing involves risk, including loss of principal.</p>
     </div>
 
+    <footer class="site-footer">
+      <a href="/terms">Terms &amp; Conditions</a> · <a href="/privacy">Privacy Policy</a> · <a href="/refunds">No-Refund Policy</a>
+    </footer>
+
   </div>
 </section>
 
@@ -136,6 +140,10 @@
       <input id="auth-email" type="email" placeholder="you@example.com" autocomplete="email">
       <label for="auth-pass">Password <span class="hint">(8+ characters)</span></label>
       <input id="auth-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      <div class="terms-check hidden" id="terms-check">
+        <input id="auth-terms" type="checkbox">
+        <label for="auth-terms">I have read and accept the <a href="/terms" target="_blank" rel="noopener">Terms &amp; Conditions</a>, <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>, and <a href="/refunds" target="_blank" rel="noopener">No-Refund Policy</a>.</label>
+      </div>
       <button id="auth-submit" class="btn btn-primary">Log in →</button>
       <p id="auth-error" class="error hidden"></p>
     </div>
