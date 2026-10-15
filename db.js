@@ -73,6 +73,13 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   cancel_at_period_end INTEGER NOT NULL DEFAULT 0,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS terms_acceptances (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  terms_version TEXT NOT NULL,
+  accepted_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_terms_user ON terms_acceptances(user_id);
 `);
 
 /* Prune expired sessions opportunistically (cheap, runs on boot + hourly). */
@@ -186,6 +193,15 @@ function setSubscriptionStatus(userId, status) {
     .run(userId, status);
 }
 
+/* ---- terms acceptances ---- */
+function recordTermsAcceptance(userId, termsVersion) {
+  const r = db.prepare('INSERT INTO terms_acceptances (user_id, terms_version) VALUES (?, ?)')
+    .run(userId, termsVersion);
+  return db.prepare('SELECT * FROM terms_acceptances WHERE id=?').get(r.lastInsertRowid);
+}
+const getTermsAcceptances = userId =>
+  db.prepare('SELECT * FROM terms_acceptances WHERE user_id = ? ORDER BY accepted_at').all(userId);
+
 /* ---- full reset (profile + debts + payments; keeps account & subscription) ---- */
 function resetUserData(userId) {
   const tx = db.transaction(uid => {
@@ -202,5 +218,6 @@ module.exports = {
   getProfile, upsertProfile,
   getDebts, addDebt, updateDebt, deleteDebt, setDebtBalance,
   logPayment, getSubscription, upsertSubscription, setSubscriptionStatus,
+  recordTermsAcceptance, getTermsAcceptances,
   resetUserData,
 };
