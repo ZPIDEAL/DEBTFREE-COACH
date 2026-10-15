@@ -312,12 +312,28 @@ function initApp() {
   if (appInit) return;
   appInit = true;
   document.querySelectorAll('.nav-btn').forEach(b => b.onclick = () => {
-    document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(x => {
+      x.classList.remove('active');
+      x.setAttribute('aria-selected', 'false');
+    });
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     b.classList.add('active');
+    b.setAttribute('aria-selected', 'true');
     $(b.dataset.tab).classList.add('active');
     if (b.dataset.tab === 'tab-coach') bootChat();
     window.scrollTo(0, 0);
+  });
+  // Arrow-key navigation across the tab list (WAI-ARIA tabs pattern)
+  const tabBtns = [...document.querySelectorAll('.nav-btn')];
+  document.querySelector('.bottom-nav').addEventListener('keydown', e => {
+    const i = tabBtns.indexOf(document.activeElement);
+    if (i < 0) return;
+    let n = null;
+    if (e.key === 'ArrowRight') n = (i + 1) % tabBtns.length;
+    else if (e.key === 'ArrowLeft') n = (i - 1 + tabBtns.length) % tabBtns.length;
+    else if (e.key === 'Home') n = 0;
+    else if (e.key === 'End') n = tabBtns.length - 1;
+    if (n !== null) { e.preventDefault(); tabBtns[n].focus(); tabBtns[n].click(); }
   });
   document.querySelectorAll('.seg-btn[data-strat]').forEach(b => b.onclick = () => setStrategy(b.dataset.strat));
   let whatifT = null;
@@ -526,6 +542,8 @@ function botSay(html) {
   d.innerHTML = html;
   $('chat-log').appendChild(d);
   $('chat-log').scrollTop = $('chat-log').scrollHeight;
+  // Announce the reply to screen readers without duplicating visible text
+  $('chat-status').textContent = d.textContent;
 }
 function userSay(text) {
   const d = document.createElement('div');
@@ -536,6 +554,7 @@ function userSay(text) {
 }
 function resetChat() {
   $('chat-log').innerHTML = '';
+  $('chat-status').textContent = '';
   renderChips();
   if (MODE === 'demo') DEMO.chatBooted = false;
   else { /* server chat is stateless; greet on first open */ window.__chatBooted = false; }
