@@ -213,6 +213,20 @@ app.get('/api/billing/status', auth.requireUser, (req, res) => {
 /* ---------- health ---------- */
 app.get('/api/health', (_req, res) => res.json({ ok: true, billing: billing.configured() }));
 
+/* ============================================================
+   LEGAL PAGES (DRAFT — pending attorney review)
+   Served as full pages; must be registered BEFORE the SPA fallback.
+   ============================================================ */
+app.get('/terms', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'legal', 'terms.html'));
+});
+app.get('/privacy', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'legal', 'privacy.html'));
+});
+app.get('/refunds', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'legal', 'refunds.html'));
+});
+
 /* ---------- SPA fallback ---------- */
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
