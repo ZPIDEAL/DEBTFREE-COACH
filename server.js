@@ -287,6 +287,35 @@ app.get('/api/admin/backup', (req, res) => {
 });
 
 /* ============================================================
+   ADMIN — reset test artifacts for a user (cancel-save offer flags
+   and Blueprint purchases). Same BACKUP_TOKEN protection as the
+   backup endpoint. Returns a test account to pristine state.
+   ============================================================ */
+app.post('/api/admin/reset-test-state', (req, res) => {
+  const token = process.env.BACKUP_TOKEN;
+  if (!token) return res.status(503).json({ error: 'Not configured.' });
+  const header = String(req.headers.authorization || '');
+  const given = header.toLowerCase().startsWith('bearer ') ? header.slice(7) : '';
+  const a = Buffer.from(given);
+  const b = Buffer.from(token);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return res.status(403).json({ error: 'Forbidden.' });
+  }
+  const userId = Number(req.body && req.body.user_id);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(400).json({ error: 'user_id required.' });
+  }
+  try {
+    const s1 = store.db.prepare('DELETE FROM cancel_save_offers WHERE user_id=?').run(userId);
+    const s2 = store.db.prepare('DELETE FROM blueprint_purchases WHERE user_id=?').run(userId);
+    res.json({ ok: true, cleared: { save_offers: s1.changes, blueprint_purchases: s2.changes } });
+  } catch (e) {
+    console.error('reset-test-state failed:', e.message);
+    res.status(500).json({ error: 'Reset failed.' });
+  }
+});
+
+/* ============================================================
    LEGAL PAGES (DRAFT — pending attorney review)
    Served as full pages; must be registered BEFORE the SPA fallback.
    ============================================================ */
