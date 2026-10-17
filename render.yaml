@@ -19,7 +19,7 @@ services:
       - key: DB_PATH
         value: /data/debtfree.db
       - key: APP_URL
-        value: https://debtfree-coach.onrender.com # ← change to your real URL
+        value: https://getdebtfreecoach.com # canonical domain (was debtfree-coach.onrender.com)
       - key: DEV_AUTO_SUBSCRIBE
         value: "false"
       - key: STRIPE_SECRET_KEY
