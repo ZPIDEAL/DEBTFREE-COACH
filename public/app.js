@@ -149,13 +149,61 @@ function initOnboarding() {
   if (obInit) { obGo(1); if (!$('ob-debts').children.length) addDebtRow(); return; }
   obInit = true;
   renderDots(1);
-  if (!$('ob-debts').children.length) addDebtRow();
+  if (MODE === 'demo') { if (!$('ob-debts').children.length) addDebtRow(); }
+  else prefillObDraft(); // resume any saved draft from a previous session
   document.querySelectorAll('.ob-next').forEach(b => b.onclick = () => obNext(+b.dataset.from));
   document.querySelectorAll('.ob-back').forEach(b => b.onclick = () => obGo(+b.dataset.to));
   $('ob-add-debt').onclick = () => addDebtRow();
   document.querySelectorAll('#ob-goals .chip').forEach(c => c.onclick = () => selectOne('#ob-goals', c));
   document.querySelectorAll('#ob-exp .chip').forEach(c => c.onclick = () => selectOne('#ob-exp', c));
   $('ob-finish').onclick = finishOnboarding;
+}
+/* Restore a previously autosaved onboarding draft (if any). */
+async function prefillObDraft() {
+  let prof = null, debts = [];
+  try {
+    const [p, d] = await Promise.all([api('GET', '/api/profile'), api('GET', '/api/debts')]);
+    prof = p.profile; debts = (d && d.debts) || [];
+  } catch (e) { /* fall through to a blank form */ }
+  if (prof) {
+    if (prof.name) $('ob-name').value = prof.name;
+    if (prof.income) $('ob-income').value = prof.income;
+    if (prof.expenses) $('ob-expenses').value = prof.expenses;
+    if (prof.savings) $('ob-savings').value = prof.savings;
+    if (prof.extra) $('ob-extra').value = prof.extra;
+    if (prof.has401k) $('ob-has401k').value = prof.has401k;
+    if (prof.match) $('ob-match').value = prof.match;
+    if (prof.goal) selectChip('#ob-goals', prof.goal);
+    if (prof.experience) selectChip('#ob-exp', prof.experience);
+  }
+  $('ob-debts').innerHTML = '';
+  if (debts.length) debts.forEach(d => addDebtRow(d)); else addDebtRow();
+}
+function selectChip(sel, val) {
+  document.querySelectorAll(sel + ' .chip').forEach(c => c.classList.toggle('sel', c.dataset.val === val));
+}
+/* Best-effort autosave of the current wizard state (never blocks navigation). */
+function collectObDraft() {
+  return {
+    draft: true,
+    name: $('ob-name').value.trim(),
+    income: +$('ob-income').value || 0,
+    expenses: +$('ob-expenses').value || 0,
+    savings: +$('ob-savings').value || 0,
+    has401k: $('ob-has401k').value,
+    match: $('ob-match').value,
+    goal: chipVal('#ob-goals'),
+    experience: chipVal('#ob-exp'),
+    extra: +$('ob-extra').value || 0,
+    strategy: 'avalanche',
+  };
+}
+async function saveObDraft() {
+  if (MODE === 'demo') return;
+  try {
+    await api('PUT', '/api/profile', collectObDraft());
+    await api('PUT', '/api/debts', { debts: readDebtRows() });
+  } catch (e) { /* draft save is best-effort; final submit validates */ }
 }
 function selectOne(sel, chip) {
   document.querySelectorAll(sel + ' .chip').forEach(x => x.classList.remove('sel'));
@@ -180,19 +228,21 @@ function obNext(from) {
   if (from === 3) {
     if (+$('ob-expenses').value <= 0) { alert('Enter your total monthly expenses.'); return; }
   }
+  saveObDraft(); // autosave progress so switching devices/browsers never loses it
   obGo(from + 1);
 }
-function addDebtRow() {
+function addDebtRow(d) {
+  const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   const div = document.createElement('div');
   div.className = 'debt-row';
   div.innerHTML =
     `<button class="debt-del" title="Remove">✕</button>
-     <label>Nickname<input data-f="name" placeholder="e.g. Chase card"></label>
+     <label>Nickname<input data-f="name" placeholder="e.g. Chase card" value="${esc(d && d.name)}"></label>
      <div class="grid2">
-       <label>Balance ($)<input data-f="balance" type="number" min="0" step="1" placeholder="4200"></label>
-       <label>APR (%)<input data-f="apr" type="number" min="0" step="0.01" placeholder="24.99"></label>
+       <label>Balance ($)<input data-f="balance" type="number" min="0" step="1" placeholder="4200" value="${esc(d && d.balance)}"></label>
+       <label>APR (%)<input data-f="apr" type="number" min="0" step="0.01" placeholder="24.99" value="${esc(d && d.apr)}"></label>
      </div>
-     <label>Minimum payment ($/mo)<input data-f="min" type="number" min="0" step="1" placeholder="120"></label>`;
+     <label>Minimum payment ($/mo)<input data-f="min" type="number" min="0" step="1" placeholder="120" value="${esc(d && d.min)}"></label>`;
   div.querySelector('.debt-del').onclick = () => div.remove();
   $('ob-debts').appendChild(div);
 }
@@ -232,10 +282,7 @@ async function finishOnboarding() {
   $('ob-finish').disabled = true;
   try {
     PROFILE = (await api('PUT', '/api/profile', profile)).profile;
-    for (const d of debts) {
-      await api('POST', '/api/debts', { name: d.name, balance: d.balance, apr: d.apr, min: d.min });
-    }
-    DEBTS = (await api('GET', '/api/debts')).debts;
+    DEBTS = (await api('PUT', '/api/debts', { debts })).debts; // replace (drafts may already exist)
     ME.onboarded = true;
     enterApp();
   } catch (e) { alert(e.message); }
@@ -346,6 +393,9 @@ function initApp() {
     if (MODE === 'demo') { startDemo(); return; }
     try { await api('DELETE', '/api/reset'); } catch (e) { alert(e.message); return; }
     ME.onboarded = false;
+    ['ob-name', 'ob-income', 'ob-expenses', 'ob-savings', 'ob-extra'].forEach(id => { $(id).value = ''; });
+    $('ob-debts').innerHTML = '';
+    document.querySelectorAll('#ob-goals .chip, #ob-exp .chip').forEach(c => c.classList.remove('sel'));
     showScreen('screen-onboard');
     initOnboarding();
   };
