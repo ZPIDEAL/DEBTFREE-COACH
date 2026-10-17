@@ -234,6 +234,12 @@ app.get('/api/path', auth.requireUser, auth.requireSubscription, requireOnboarde
    ============================================================ */
 app.post('/api/billing/checkout', auth.requireUser, billing.createCheckout);
 app.post('/api/billing/portal', auth.requireUser, billing.createPortal);
+/* Cancel-save flow: downsell offer, cancel at period end, Blueprint OTO. */
+app.get('/api/billing/save-offer', auth.requireUser, billing.saveOfferStatus);
+app.post('/api/billing/downsell', auth.requireUser, billing.applyDownsell);
+app.post('/api/billing/cancel', auth.requireUser, billing.cancelSubscription);
+app.post('/api/billing/blueprint-checkout', auth.requireUser, billing.blueprintCheckout);
+app.get('/api/billing/blueprint', auth.requireUser, billing.blueprintDownload);
 app.get('/api/billing/status', auth.requireUser, (req, res) => {
   res.json({ subscription: auth.subscriptionInfo(req.user.user_id), configured: billing.configured() });
 });
