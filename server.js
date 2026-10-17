@@ -101,6 +101,22 @@ app.get('/api/profile', auth.requireUser, auth.requireSubscription, (req, res) =
 
 app.put('/api/profile', auth.requireUser, auth.requireSubscription, (req, res) => {
   const b = req.body || {};
+  /* Draft autosave from the onboarding wizard: persist whatever is filled so
+     far without validation, and never mark onboarding complete. */
+  if (b.draft === true) {
+    const profile = store.saveDraftProfile(req.user.user_id, {
+      name: auth.str(b.name, 80),
+      income: auth.num(b.income), expenses: auth.num(b.expenses),
+      savings: auth.num(b.savings),
+      has401k: ['yes', 'no'].includes(b.has401k) ? b.has401k : 'no',
+      match: ['yes', 'no', 'unknown'].includes(b.match) ? b.match : 'unknown',
+      goal: ['debtfree', 'home', 'retire', 'savings'].includes(b.goal) ? b.goal : '',
+      experience: ['beginner', 'some', 'comfortable'].includes(b.experience) ? b.experience : '',
+      extra: auth.num(b.extra),
+      strategy: b.strategy === 'snowball' ? 'snowball' : 'avalanche',
+    });
+    return res.json({ profile });
+  }
   const has401k = ['yes', 'no'].includes(b.has401k) ? b.has401k : 'no';
   const match = ['yes', 'no', 'unknown'].includes(b.match) ? b.match : 'unknown';
   const goal = ['debtfree', 'home', 'retire', 'savings'].includes(b.goal) ? b.goal : '';
@@ -138,6 +154,18 @@ app.post('/api/debts', auth.requireUser, auth.requireSubscription, (req, res) =>
   const v = validDebtBody(req.body || {});
   if (v.error) return res.status(400).json({ error: v.error });
   res.status(201).json({ debt: store.addDebt(req.user.user_id, v) });
+});
+/* Replace the user's whole debt list (onboarding autosave + final submit). */
+app.put('/api/debts', auth.requireUser, auth.requireSubscription, (req, res) => {
+  const list = (req.body && req.body.debts) || [];
+  if (!Array.isArray(list)) return res.status(400).json({ error: 'debts must be an array.' });
+  const clean = [];
+  for (const d of list) {
+    const v = validDebtBody(d || {});
+    if (v.error) return res.status(400).json({ error: v.error });
+    clean.push(v);
+  }
+  res.json({ debts: store.replaceDebts(req.user.user_id, clean) });
 });
 app.put('/api/debts/:id', auth.requireUser, auth.requireSubscription, (req, res) => {
   const v = validDebtBody(req.body || {});
