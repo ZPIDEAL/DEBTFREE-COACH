@@ -60,6 +60,15 @@ async function boot() {
     history.replaceState(null, '', '/app');
     try { ME = await api('GET', '/api/me'); } catch (e) { /* keep old */ }
   }
+  if (params.get('blueprint') === '1' && params.get('session_id')) {
+    const sid = params.get('session_id');
+    history.replaceState(null, '', '/app');
+    downloadBlueprint(sid).then(ok => {
+      if (ok) setTimeout(() => alert('Your Blueprint is downloading.'), 300);
+    });
+  } else if (params.get('blueprint')) {
+    history.replaceState(null, '', '/app');
+  }
   if (!ME.user) { showScreen('screen-landing'); return; }
   if (!ME.subscription || !ME.subscription.active) { showScreen('screen-subscribe'); return; }
   if (!ME.onboarded) { showScreen('screen-onboard'); initOnboarding(); return; }
@@ -402,6 +411,18 @@ function initApp() {
   $('btn-account').onclick = openAccountModal;
   $('acctmodal-close').onclick = () => $('acctmodal').classList.add('hidden');
   $('btn-portal').onclick = openPortal;
+  $('btn-cancelflow').onclick = openCancelFlow;
+  $('cancelmodal-close').onclick = closeCancelFlow;
+  $('cf-keep-1').onclick = closeCancelFlow;
+  $('cf-keep-2').onclick = closeCancelFlow;
+  $('cf-done-close').onclick = closeCancelFlow;
+  $('cf-reason-next').onclick = cfReasonNext;
+  $('cf-downsell-monthly').onclick = () => cfApplyDownsell('monthly');
+  $('cf-downsell-annual').onclick = () => cfApplyDownsell('annual');
+  $('cf-downsell-decline').onclick = () => cfShow('oto');
+  $('cf-oto-buy').onclick = cfBuyBlueprint;
+  $('cf-oto-decline').onclick = () => cfShow('confirm');
+  $('cf-confirm-yes').onclick = cfFinalCancel;
   $('btn-logout-2').onclick = doLogout;
   // payment log modal
   $('btn-log-payment').onclick = () => {
@@ -427,6 +448,103 @@ async function openPortal() {
     const { url } = await api('POST', '/api/billing/portal');
     location.href = url;
   } catch (e) { alert(e.message); }
+}
+
+/* ---------------- CANCEL-SAVE FLOW ----------------
+   reason -> (too_expensive ? downsell offer) -> Blueprint OTO -> confirm.
+   The cancel button stays reachable on every step (FTC click-to-cancel). */
+let CF = { reason: null, status: null };
+
+function cfShow(step) {
+  document.querySelectorAll('#cancelmodal .cf-step').forEach(s =>
+    s.classList.toggle('hidden', s.dataset.cf !== step));
+}
+
+async function openCancelFlow() {
+  $('acctmodal').classList.add('hidden');
+  try {
+    CF.status = await api('GET', '/api/billing/save-offer');
+  } catch (e) { alert(e.message); return; }
+  CF.reason = null;
+  document.querySelectorAll('input[name="cf-reason"]').forEach(r => { r.checked = false; });
+  if (!CF.status.eligible) {
+    cfShow('done');
+    $('cf-done-title').textContent = 'No active subscription.';
+    $('cf-done-text').textContent = 'There is nothing to cancel on this account.';
+  } else {
+    cfShow('reason');
+  }
+  $('cancelmodal').classList.remove('hidden');
+}
+
+function closeCancelFlow() { $('cancelmodal').classList.add('hidden'); }
+
+function cfReasonNext() {
+  const sel = document.querySelector('input[name="cf-reason"]:checked');
+  if (!sel) { alert('Pick the closest reason.'); return; }
+  CF.reason = sel.value;
+  if (CF.reason === 'too_expensive' && CF.status.downsellAvailable && CF.status.downsellConfigured) {
+    cfShow('downsell');
+  } else {
+    cfShow('oto');
+  }
+}
+
+async function cfApplyDownsell(choice) {
+  const btn = choice === 'monthly' ? $('cf-downsell-monthly') : $('cf-downsell-annual');
+  btn.disabled = true;
+  try {
+    await api('POST', '/api/billing/downsell', { choice });
+    CF.status.downsellAvailable = false;
+    cfShow('done');
+    $('cf-done-title').textContent = choice === 'monthly' ? "You're staying at $7.99/mo." : "You're on the annual plan.";
+    $('cf-done-text').textContent = "Your discount is applied. Thanks for sticking with us — let's kill that debt.";
+    try { ME = await api('GET', '/api/me'); } catch (e) { /* keep old */ }
+  } catch (e) { alert(e.message); }
+  btn.disabled = false;
+}
+
+async function cfBuyBlueprint() {
+  const btn = $('cf-oto-buy');
+  btn.disabled = true;
+  try {
+    const { url } = await api('POST', '/api/billing/blueprint-checkout');
+    location.href = url;
+  } catch (e) { alert(e.message); btn.disabled = false; }
+}
+
+async function cfFinalCancel() {
+  const btn = $('cf-confirm-yes');
+  btn.disabled = true;
+  try {
+    const r = await api('POST', '/api/billing/cancel', { reason: CF.reason || 'other' });
+    cfShow('done');
+    $('cf-done-title').textContent = 'Subscription canceled.';
+    const when = r.cancelAt
+      ? new Date(r.cancelAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : 'the end of your billing period';
+    $('cf-done-text').textContent = `You keep full access until ${when}. No charge after that.`;
+    try { ME = await api('GET', '/api/me'); } catch (e) { /* keep old */ }
+  } catch (e) { alert(e.message); }
+  btn.disabled = false;
+}
+
+async function downloadBlueprint(sessionId) {
+  try {
+    const q = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : '';
+    const r = await fetch(`/api/billing/blueprint${q}`, { credentials: 'same-origin' });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      throw new Error(d.error || 'Download failed.');
+    }
+    const blob = await r.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'debt-free-date-blueprint.pdf';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    return true;
+  } catch (e) { alert(e.message); return false; }
 }
 function openAccountModal() {
   if (MODE === 'demo') {
