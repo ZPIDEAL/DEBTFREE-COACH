@@ -130,6 +130,20 @@ function upsertProfile(userId, p) {
     .run({ user_id: userId, ...p });
   return getProfile(userId);
 }
+/* Draft profile: same upsert but never flips onboarded and skips validation
+   (validation happens on final submit). Used for per-step autosave. */
+function saveDraftProfile(userId, p) {
+  db.prepare(`INSERT INTO profiles
+      (user_id, name, income, expenses, savings, has401k, match, goal, experience, extra, strategy, onboarded, updated_at)
+      VALUES (@user_id, @name, @income, @expenses, @savings, @has401k, @match, @goal, @experience, @extra, @strategy, 0, datetime('now'))
+      ON CONFLICT(user_id) DO UPDATE SET
+        name=excluded.name, income=excluded.income, expenses=excluded.expenses,
+        savings=excluded.savings, has401k=excluded.has401k, match=excluded.match,
+        goal=excluded.goal, experience=excluded.experience, extra=excluded.extra,
+        strategy=excluded.strategy, updated_at=datetime('now')`)
+    .run({ user_id: userId, ...p });
+  return getProfile(userId);
+}
 
 /* ---- debts ---- */
 const getDebts = userId =>
@@ -149,6 +163,19 @@ function updateDebt(userId, id, d) {
 }
 function deleteDebt(userId, id) {
   return db.prepare('DELETE FROM debts WHERE id=? AND user_id=?').run(id, userId).changes > 0;
+}
+/* Replace all of a user's debts with the given array (used by onboarding
+   autosave + final submit so drafts never duplicate). */
+function replaceDebts(userId, debts) {
+  const del = db.prepare('DELETE FROM debts WHERE user_id=?');
+  const ins = db.prepare(`INSERT INTO debts (user_id, name, balance, apr, min, position)
+                          VALUES (?, ?, ?, ?, ?, ?)`);
+  const txn = db.transaction(list => {
+    del.run(userId);
+    list.forEach((d, i) => ins.run(userId, d.name, d.balance, d.apr, d.min, i));
+  });
+  txn(debts || []);
+  return getDebts(userId);
 }
 function setDebtBalance(userId, id, balance) {
   db.prepare('UPDATE debts SET balance=? WHERE id=? AND user_id=?').run(balance, id, userId);
@@ -215,8 +242,8 @@ function resetUserData(userId) {
 module.exports = {
   db, getUserByEmail, getUserById, createUser,
   createSession, getSession, deleteSession,
-  getProfile, upsertProfile,
-  getDebts, addDebt, updateDebt, deleteDebt, setDebtBalance,
+  getProfile, upsertProfile, saveDraftProfile,
+  getDebts, addDebt, updateDebt, deleteDebt, setDebtBalance, replaceDebts,
   logPayment, getSubscription, upsertSubscription, setSubscriptionStatus,
   recordTermsAcceptance, getTermsAcceptances,
   resetUserData,
