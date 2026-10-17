@@ -214,6 +214,45 @@ app.get('/api/billing/status', auth.requireUser, (req, res) => {
 app.get('/api/health', (_req, res) => res.json({ ok: true, billing: billing.configured() }));
 
 /* ============================================================
+   ADMIN BACKUP — database snapshot for offsite encrypted backups.
+   Protected by the BACKUP_TOKEN env var (constant-time compare).
+   Streams a consistent snapshot (VACUUM INTO a temp file) of the
+   SQLite database. The fetcher encrypts it before it lands anywhere
+   permanent. Registered BEFORE the SPA fallback.
+   ============================================================ */
+const fs = require('fs');
+const os = require('os');
+const crypto = require('crypto');
+app.get('/api/admin/backup', (req, res) => {
+  const token = process.env.BACKUP_TOKEN;
+  if (!token) return res.status(503).json({ error: 'Backups not configured.' });
+  const header = String(req.headers.authorization || '');
+  const given = header.toLowerCase().startsWith('bearer ')
+    ? header.slice(7)
+    : String(req.query.token || '');
+  const a = Buffer.from(given);
+  const b = Buffer.from(token);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return res.status(403).json({ error: 'Forbidden.' });
+  }
+  const tmp = path.join(os.tmpdir(), `dfc-backup-${Date.now()}.db`);
+  const cleanup = () => fs.unlink(tmp, () => {});
+  try {
+    store.db.exec(`VACUUM INTO '${tmp.replace(/'/g, "''")}'`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', 'attachment; filename="debtfree-backup.db"');
+    const stream = fs.createReadStream(tmp);
+    stream.on('close', cleanup);
+    stream.on('error', () => { cleanup(); if (!res.headersSent) res.status(500).end(); });
+    stream.pipe(res);
+  } catch (e) {
+    cleanup();
+    console.error('Backup failed:', e.message);
+    if (!res.headersSent) res.status(500).json({ error: 'Backup failed.' });
+  }
+});
+
+/* ============================================================
    LEGAL PAGES (DRAFT — pending attorney review)
    Served as full pages; must be registered BEFORE the SPA fallback.
    ============================================================ */
