@@ -216,3 +216,11 @@ input[type=range]{accent-color:var(--green); margin:1rem 0 .5rem}
 .terms-check input[type=checkbox]{width:auto; margin:.25rem 0 0; accent-color:var(--green); flex:0 0 auto}
 .terms-check label{font-size:.83rem; color:var(--muted); font-weight:400; margin:0}
 .terms-check a{color:var(--blue)}
+
+/* ---------- Cancel-save flow ---------- */
+.cf-step h3{margin-top:0; padding-right:2rem}
+.cf-radio{display:flex; gap:.6rem; align-items:center; margin:.55rem 0; cursor:pointer; font-weight:400}
+.cf-radio input{width:auto; accent-color:var(--green)}
+.cf-offer{display:flex; align-items:center; justify-content:space-between; gap:1rem; border:1px solid var(--line); border-radius:12px; padding:.8rem 1rem; margin:.6rem 0}
+.cf-offer .btn{white-space:nowrap}
+#cancelmodal .btn-block{margin-top:.6rem}
