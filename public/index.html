@@ -392,9 +392,62 @@
       <h3>Account</h3>
       <p class="muted" id="acct-email"></p>
       <p class="muted small" id="acct-sub"></p>
-      <button class="btn btn-ghost btn-block" id="btn-portal">Manage subscription / cancel</button>
+      <button class="btn btn-ghost btn-block" id="btn-portal">Update payment method</button>
+      <button class="btn btn-ghost btn-block" id="btn-cancelflow">Cancel subscription</button>
       <button class="btn btn-ghost btn-block" id="btn-logout-2">Log out</button>
       <p class="fineprint">Cancelling stops future charges. You keep access until the end of the billing period.</p>
+    </div>
+  </div>
+
+  <div id="cancelmodal" class="modal hidden">
+    <div class="modal-card">
+      <button class="icon-btn modal-close" id="cancelmodal-close">✕</button>
+
+      <div class="cf-step" data-cf="reason">
+        <h3>We're sorry to see you go.</h3>
+        <p class="muted">What's the main reason you're cancelling?</p>
+        <label class="cf-radio"><input type="radio" name="cf-reason" value="too_expensive"> It's too expensive</label>
+        <label class="cf-radio"><input type="radio" name="cf-reason" value="not_using"> I'm not using it enough</label>
+        <label class="cf-radio"><input type="radio" name="cf-reason" value="other"> Something else</label>
+        <button class="btn btn-primary btn-block" id="cf-reason-next">Continue</button>
+        <button class="btn btn-ghost btn-block" id="cf-keep-1">Keep my subscription</button>
+      </div>
+
+      <div class="cf-step hidden" data-cf="downsell">
+        <h3>Before you go — how about a lower price?</h3>
+        <p class="muted">Pick one. Either way, you keep everything.</p>
+        <div class="cf-offer">
+          <div><strong>$7.99/mo</strong> <span class="muted small">— 20% off, locked in</span></div>
+          <button class="btn btn-primary" id="cf-downsell-monthly">Keep me subscribed</button>
+        </div>
+        <div class="cf-offer">
+          <div><strong>$79/yr</strong> <span class="muted small">— save 34% vs monthly</span></div>
+          <button class="btn btn-primary" id="cf-downsell-annual">Switch to annual</button>
+        </div>
+        <button class="btn btn-ghost btn-block" id="cf-downsell-decline">No thanks, continue cancelling</button>
+      </div>
+
+      <div class="cf-step hidden" data-cf="oto">
+        <h3>Take your plan with you.</h3>
+        <p class="muted">Your <strong>Debt-Free Date Blueprint</strong> — your debts, your payoff date, and the exact order to eliminate each balance — as a personalized PDF you keep forever.</p>
+        <p><strong>One-time $19.</strong> <span class="muted small">No subscription.</span></p>
+        <button class="btn btn-primary btn-block" id="cf-oto-buy">Get my Blueprint — $19</button>
+        <button class="btn btn-ghost btn-block" id="cf-oto-decline">No thanks, continue cancelling</button>
+      </div>
+
+      <div class="cf-step hidden" data-cf="confirm">
+        <h3>Cancel anyway?</h3>
+        <p class="muted" id="cf-confirm-text">You'll keep full access until the end of your billing period. No charge after that, and you can resubscribe anytime.</p>
+        <button class="btn btn-primary btn-block" id="cf-confirm-yes">Yes, cancel my subscription</button>
+        <button class="btn btn-ghost btn-block" id="cf-keep-2">Keep my subscription</button>
+      </div>
+
+      <div class="cf-step hidden" data-cf="done">
+        <h3 id="cf-done-title">Done.</h3>
+        <p class="muted" id="cf-done-text"></p>
+        <button class="btn btn-primary btn-block" id="cf-done-close">Close</button>
+      </div>
+
     </div>
   </div>
 </section>
