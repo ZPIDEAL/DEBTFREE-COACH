@@ -79,6 +79,21 @@ CREATE TABLE IF NOT EXISTS terms_acceptances (
   terms_version TEXT NOT NULL,
   accepted_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+/* Cancel-save flow: one downsell offer per customer, one blueprint OTO. */
+CREATE TABLE IF NOT EXISTS cancel_save_offers (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  downsell_used INTEGER NOT NULL DEFAULT 0,
+  oto_offered INTEGER NOT NULL DEFAULT 0,
+  cancel_reason TEXT,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS blueprint_purchases (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  stripe_session_id TEXT NOT NULL UNIQUE,
+  amount_cents INTEGER NOT NULL DEFAULT 1900,
+  purchased_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 CREATE INDEX IF NOT EXISTS idx_terms_user ON terms_acceptances(user_id);
 `);
 
@@ -229,6 +244,35 @@ function recordTermsAcceptance(userId, termsVersion) {
 const getTermsAcceptances = userId =>
   db.prepare('SELECT * FROM terms_acceptances WHERE user_id = ? ORDER BY accepted_at').all(userId);
 
+/* ---- cancel-save flow ---- */
+const getSaveOffer = userId =>
+  db.prepare('SELECT * FROM cancel_save_offers WHERE user_id = ?').get(userId) || null;
+function touchSaveOffer(userId) {
+  db.prepare(`INSERT INTO cancel_save_offers (user_id) VALUES (?)
+              ON CONFLICT(user_id) DO UPDATE SET updated_at=datetime('now')`).run(userId);
+}
+function markDownsellUsed(userId) {
+  touchSaveOffer(userId);
+  db.prepare(`UPDATE cancel_save_offers SET downsell_used=1, updated_at=datetime('now')
+              WHERE user_id=?`).run(userId);
+}
+function recordCancelReason(userId, reason) {
+  touchSaveOffer(userId);
+  db.prepare(`UPDATE cancel_save_offers SET cancel_reason=?, updated_at=datetime('now')
+              WHERE user_id=?`).run(reason, userId);
+}
+function markOtoOffered(userId) {
+  touchSaveOffer(userId);
+  db.prepare(`UPDATE cancel_save_offers SET oto_offered=1, updated_at=datetime('now')
+              WHERE user_id=?`).run(userId);
+}
+const hasBlueprintPurchase = userId =>
+  !!db.prepare('SELECT 1 FROM blueprint_purchases WHERE user_id = ?').get(userId);
+function recordBlueprintPurchase(userId, sessionId, amountCents) {
+  db.prepare(`INSERT OR IGNORE INTO blueprint_purchases (user_id, stripe_session_id, amount_cents)
+              VALUES (?, ?, ?)`).run(userId, sessionId, amountCents || 1900);
+}
+
 /* ---- full reset (profile + debts + payments; keeps account & subscription) ---- */
 function resetUserData(userId) {
   const tx = db.transaction(uid => {
@@ -246,5 +290,7 @@ module.exports = {
   getDebts, addDebt, updateDebt, deleteDebt, setDebtBalance, replaceDebts,
   logPayment, getSubscription, upsertSubscription, setSubscriptionStatus,
   recordTermsAcceptance, getTermsAcceptances,
+  getSaveOffer, markDownsellUsed, recordCancelReason, markOtoOffered,
+  hasBlueprintPurchase, recordBlueprintPurchase,
   resetUserData,
 };
