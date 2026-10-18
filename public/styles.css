@@ -242,3 +242,10 @@ input[type=range]{accent-color:var(--green); margin:1rem 0 .5rem}
 .share-caption{width:100%; background:var(--bg2); border:1px solid var(--line); border-radius:12px; color:var(--text); padding:.7rem; font-size:.85rem; margin-bottom:.75rem; resize:none}
 #share-size-seg{margin-bottom:.25rem}
 @media (prefers-reduced-motion:reduce){.badge-big{animation:none}}
+
+/* ---------- Cookie-consent banner ---------- */
+.cookie-banner{position:fixed;left:1rem;right:1rem;bottom:1rem;z-index:60;background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:1rem 1.25rem;box-shadow:0 8px 32px rgba(0,0,0,.5);display:flex;gap:1rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.cookie-banner p{margin:0;font-size:.85rem;flex:1;min-width:200px}
+.cookie-banner a{color:var(--gold)}
+.cookie-btns{display:flex;gap:.5rem}
+.cookie-btns .btn{width:auto;padding:.6rem 1.1rem;font-size:.9rem;margin:0}
