@@ -434,6 +434,7 @@ function initApp() {
   };
   $('paymodal-close').onclick = () => $('paymodal').classList.add('hidden');
   $('pay-save').onclick = logPayment;
+  wireBadges();
   $('modal-close').onclick = () => $('modal').classList.add('hidden');
   $('modal').addEventListener('click', e => { if (e.target === $('modal')) $('modal').classList.add('hidden'); });
   $('chat-form').onsubmit = e => {
@@ -630,6 +631,7 @@ async function renderDash() {
   ).join('');
   $('whatif-slider').value = p.extra || 0;
   await updateWhatif();
+  refreshBadges(plan); // fire-and-forget: badge shelf + unlock celebrations
 }
 
 async function updateWhatif() {
@@ -663,6 +665,8 @@ async function logPayment() {
   if (MODE === 'demo') {
     newBalance = Math.max(0, d.balance - amt);
     d.balance = newBalance;
+    DEMO.payments = DEMO.payments || [];
+    DEMO.payments.push({ amount: amt, debt_id: debtId, created_at: new Date().toISOString() });
     const sim = P.simulatePayoff(P.activeDebts(debts), profile.extra, profile.strategy);
     plan = { months: sim.stalled ? null : sim.months, stalled: sim.stalled, interest: sim.interest };
   } else {
@@ -759,4 +763,234 @@ async function handleUser(text) {
   } catch (e) {
     botSay(`Hmm, I hit a snag: ${P.esc(e.message)} — try again in a moment.`);
   }
+}
+
+/* ============================================================
+   BADGES — gamified milestones + shareable win graphics
+   ============================================================ */
+const TRIAL_URL = 'https://getdebtfreecoach.com';
+let PAYMENTS = [];            // account mode: from GET /api/payments
+let EARNED_BADGES = new Set();
+let badgeQueue = [];
+let shareBadgeId = null, shareSize = 'square', shareCanvas = null;
+
+function weekKey(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return 'x';
+  const onejan = new Date(d.getFullYear(), 0, 1);
+  const w = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+  return d.getFullYear() + '-W' + w;
+}
+
+const BADGES = [
+  { id: 'plan-locked', emoji: '🎯', name: 'Plan Locked In',
+    desc: 'You ran the numbers and locked your payoff plan.',
+    stat: s => `Debt-free date: ${s.plan && s.plan.months ? P.monthName(s.plan.months) : '—'}`,
+    test: s => (s.onboarded && s.debts.length)
+      ? { earned: true } : { earned: false, hint: 'Finish setup' } },
+  { id: 'first-payment', emoji: '💪', name: 'First Strike',
+    desc: 'First payment logged. The plan is in motion.',
+    stat: s => `${P.money(s.totalPaid)} paid so far`,
+    test: s => s.payments.length >= 1
+      ? { earned: true } : { earned: false, hint: 'Log a payment' } },
+  { id: 'destroyer-1k', emoji: '🥉', name: 'Debt Destroyer',
+    desc: '$1,000 of debt destroyed.',
+    stat: () => '$1,000+ of debt destroyed',
+    test: s => s.totalPaid >= 1000
+      ? { earned: true } : { earned: false, hint: `${P.money(1000 - s.totalPaid)} to go` } },
+  { id: 'destroyer-5k', emoji: '🥈', name: 'Debt Destroyer II',
+    desc: '$5,000 of debt destroyed. Serious momentum.',
+    stat: () => '$5,000+ of debt destroyed',
+    test: s => s.totalPaid >= 5000
+      ? { earned: true } : { earned: false, hint: `${P.money(5000 - s.totalPaid)} to go` } },
+  { id: 'destroyer-10k', emoji: '🥇', name: 'Debt Destroyer III',
+    desc: '$10,000 of debt destroyed. Elite.',
+    stat: () => '$10,000+ of debt destroyed',
+    test: s => s.totalPaid >= 10000
+      ? { earned: true } : { earned: false, hint: `${P.money(10000 - s.totalPaid)} to go` } },
+  { id: 'first-kill', emoji: '⚔️', name: 'Debt Slayer',
+    desc: 'You killed a debt down to $0.',
+    stat: s => `${s.killed} ${s.killed === 1 ? 'debt' : 'debts'} killed`,
+    test: s => (s.killed > 0 && s.payments.length > 0)
+      ? { earned: true } : { earned: false, hint: 'Kill a debt to $0' } },
+  { id: 'momentum-4', emoji: '🔥', name: 'Momentum',
+    desc: 'Payments logged in 4 different weeks. Consistency compounds.',
+    stat: () => 'Payments in 4 different weeks',
+    test: s => s.weeks >= 4
+      ? { earned: true } : { earned: false, hint: `${4 - s.weeks} more ${4 - s.weeks === 1 ? 'week' : 'weeks'}` } },
+  { id: 'debt-free', emoji: '🏁', name: 'Freedom Day',
+    desc: 'Every balance at $0. You did it.',
+    stat: () => '100% debt-free',
+    test: s => (s.debts.length > 0 && s.debts.every(d => d.balance <= 0))
+      ? { earned: true } : { earned: false, hint: 'The final boss' } },
+];
+const badgeById = id => BADGES.find(b => b.id === id);
+
+function badgeState(plan) {
+  const { profile, debts } = ctx();
+  const payments = MODE === 'demo' ? (DEMO.payments || []) : PAYMENTS;
+  const totalPaid = payments.reduce((a, p) => a + (+p.amount || 0), 0);
+  const weeks = new Set(payments.map(p => weekKey(p.created_at))).size;
+  const killed = debts.filter(d => d.balance <= 0).length;
+  return { onboarded: !!(profile && profile.onboarded), debts, payments, totalPaid, weeks, killed, plan: plan || null };
+}
+
+async function refreshBadges(plan) {
+  if (!$('badge-shelf')) return;
+  if (MODE === 'account') {
+    try {
+      const [ph, bh] = await Promise.all([api('GET', '/api/payments'), api('GET', '/api/badges')]);
+      PAYMENTS = ph.payments || [];
+      EARNED_BADGES = new Set((bh.badges || []).map(b => b.badge_id));
+    } catch (e) { /* shelf renders locked on failure */ }
+  }
+  const st = badgeState(plan);
+  const results = BADGES.map(def => ({ def, r: def.test(st), stat: null }));
+  results.forEach(x => { try { x.stat = x.def.stat(st); } catch (e) { x.stat = ''; } });
+  const fresh = results.filter(x => x.r.earned && !EARNED_BADGES.has(x.def.id)).map(x => x.def.id);
+  if (fresh.length) {
+    if (MODE === 'account') {
+      try {
+        const c = await api('POST', '/api/badges/claim', { badges: fresh });
+        (c.claimed || []).forEach(id => { EARNED_BADGES.add(id); badgeQueue.push(id); });
+      } catch (e) { /* celebrate next render */ }
+    } else {
+      fresh.forEach(id => { EARNED_BADGES.add(id); badgeQueue.push(id); });
+    }
+  }
+  renderBadgeShelf(results);
+  showNextBadgeCelebration();
+}
+
+function renderBadgeShelf(results) {
+  const earnedCount = results.filter(x => EARNED_BADGES.has(x.def.id)).length;
+  $('badge-count').textContent = `${earnedCount}/${BADGES.length} earned`;
+  $('badge-shelf').innerHTML = results.map(x => {
+    const earned = EARNED_BADGES.has(x.def.id);
+    return `<div class="badge-tile${earned ? ' earned' : ''}">` +
+      `<div class="b-emoji">${x.def.emoji}</div>` +
+      `<div class="b-name">${x.def.name}</div>` +
+      `<div class="b-hint">${earned ? (x.stat || '') : P.esc(x.r.hint || 'Locked')}</div>` +
+      (earned ? `<button class="b-share" data-badge="${x.def.id}">📣 Share</button>` : '') +
+      `</div>`;
+  }).join('');
+  document.querySelectorAll('.b-share').forEach(b =>
+    b.onclick = () => openShare(b.dataset.badge));
+}
+
+function showNextBadgeCelebration() {
+  if (!badgeQueue.length || !$('badgemodal').classList.contains('hidden')) return;
+  const id = badgeQueue.shift();
+  const def = badgeById(id);
+  if (!def) { showNextBadgeCelebration(); return; }
+  shareBadgeId = id;
+  $('badgemodal-emoji').textContent = def.emoji;
+  $('badgemodal-name').textContent = def.name + ' — unlocked!';
+  $('badgemodal-desc').textContent = def.desc;
+  $('badgemodal').classList.remove('hidden');
+}
+
+/* ---------------- share graphics (canvas) ---------------- */
+function drawShareGraphic(def, statText, size) {
+  const W = 1080, H = size === 'story' ? 1920 : 1080;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  const bg = g.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#16294d'); bg.addColorStop(1, '#0b1220');
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  g.strokeStyle = '#fbbf24'; g.lineWidth = 10;
+  g.strokeRect(28, 28, W - 56, H - 56);
+  g.textAlign = 'center';
+  const cx = W / 2;
+  let y = size === 'story' ? 480 : 300;
+  g.font = '200px serif';
+  g.fillText(def.emoji, cx, y);
+  y += size === 'story' ? 190 : 170;
+  g.fillStyle = '#fbbf24';
+  g.font = '800 92px -apple-system, "Segoe UI", Roboto, sans-serif';
+  g.fillText(def.name.toUpperCase(), cx, y, W - 160);
+  y += 110;
+  g.fillStyle = '#eef3fb';
+  g.font = '700 64px -apple-system, "Segoe UI", Roboto, sans-serif';
+  g.fillText(statText, cx, y, W - 160);
+  y += 110;
+  g.fillStyle = '#93a1bd';
+  g.font = '500 44px -apple-system, "Segoe UI", Roboto, sans-serif';
+  const st = badgeState();
+  const dateLine = st.plan && st.plan.months ? `My debt-free date: ${P.monthName(st.plan.months)}` : 'My debt-free plan is locked in';
+  g.fillText(dateLine, cx, y, W - 160);
+  g.fillStyle = '#22c55e';
+  g.font = '800 54px -apple-system, "Segoe UI", Roboto, sans-serif';
+  g.fillText('DebtFree Coach', cx, H - (size === 'story' ? 320 : 200));
+  g.fillStyle = '#93a1bd';
+  g.font = '500 40px -apple-system, "Segoe UI", Roboto, sans-serif';
+  g.fillText('getdebtfreecoach.com', cx, H - (size === 'story' ? 250 : 140));
+  return cv;
+}
+
+function shareCaption(def, statText) {
+  return `I just earned the ${def.emoji} ${def.name} badge — ${statText} — with DebtFree Coach! 💪\n\nFind YOUR debt-free date: ${TRIAL_URL}\n\n#DebtFree #DebtPayoffJourney`;
+}
+
+function openShare(badgeId) {
+  const def = badgeById(badgeId);
+  if (!def) return;
+  shareBadgeId = badgeId;
+  const st = badgeState();
+  let statText = '';
+  try { statText = def.stat(st); } catch (e) { statText = def.desc; }
+  $('sharemodal').dataset.stat = statText;
+  document.querySelectorAll('#share-size-seg .seg-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.size === shareSize));
+  renderSharePreview();
+  $('share-caption').value = shareCaption(def, statText);
+  const canNative = !!(navigator.share && navigator.canShare);
+  $('share-native').classList.toggle('hidden', !canNative);
+  $('sharemodal').classList.remove('hidden');
+}
+
+function renderSharePreview() {
+  const def = badgeById(shareBadgeId);
+  if (!def) return;
+  shareCanvas = drawShareGraphic(def, $('sharemodal').dataset.stat || '', shareSize);
+  $('share-preview').src = shareCanvas.toDataURL('image/png');
+}
+
+function wireBadges() {
+  if ($('badgemodal-close')) $('badgemodal-close').onclick = () => { $('badgemodal').classList.add('hidden'); showNextBadgeCelebration(); };
+  if ($('badgemodal-next')) $('badgemodal-next').onclick = () => { $('badgemodal').classList.add('hidden'); showNextBadgeCelebration(); };
+  if ($('badgemodal-share')) $('badgemodal-share').onclick = () => { $('badgemodal').classList.add('hidden'); openShare(shareBadgeId); };
+  if ($('sharemodal-close')) $('sharemodal-close').onclick = () => $('sharemodal').classList.add('hidden');
+  document.querySelectorAll('#share-size-seg .seg-btn').forEach(b => b.onclick = () => {
+    shareSize = b.dataset.size;
+    document.querySelectorAll('#share-size-seg .seg-btn').forEach(x => x.classList.toggle('active', x === b));
+    renderSharePreview();
+  });
+  if ($('share-download')) $('share-download').onclick = () => {
+    if (!shareCanvas) return;
+    shareCanvas.toBlob(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `debtfree-coach-${shareBadgeId}-${shareSize}.png`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }, 'image/png');
+  };
+  if ($('share-copy')) $('share-copy').onclick = async () => {
+    try { await navigator.clipboard.writeText($('share-caption').value); $('share-copy').textContent = '✅ Copied!'; }
+    catch (e) { $('share-caption').select(); document.execCommand('copy'); }
+    setTimeout(() => $('share-copy').textContent = '📋 Copy caption', 1500);
+  };
+  if ($('share-native')) $('share-native').onclick = async () => {
+    if (!shareCanvas || !navigator.share) return;
+    const blob = await new Promise(r => shareCanvas.toBlob(r, 'image/png'));
+    const file = new File([blob], `debtfree-coach-${shareBadgeId}.png`, { type: 'image/png' });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] }))
+        await navigator.share({ files: [file], text: $('share-caption').value, title: 'DebtFree Coach' });
+      else
+        await navigator.share({ text: $('share-caption').value, title: 'DebtFree Coach' });
+    } catch (e) { /* user dismissed */ }
+  };
 }
