@@ -224,3 +224,21 @@ input[type=range]{accent-color:var(--green); margin:1rem 0 .5rem}
 .cf-offer{display:flex; align-items:center; justify-content:space-between; gap:1rem; border:1px solid var(--line); border-radius:12px; padding:.8rem 1rem; margin:.6rem 0}
 .cf-offer .btn{white-space:nowrap}
 #cancelmodal .btn-block{margin-top:.6rem}
+
+/* ---------- Badges (gamified milestones) ---------- */
+.badge-shelf{display:grid; grid-template-columns:repeat(4,1fr); gap:.6rem}
+.badge-tile{background:var(--bg2); border:1px solid var(--line); border-radius:14px; padding:.7rem .4rem; text-align:center; position:relative}
+.badge-tile .b-emoji{font-size:1.9rem; line-height:1; filter:grayscale(1); opacity:.35}
+.badge-tile .b-name{font-size:.68rem; font-weight:700; margin-top:.35rem; color:var(--muted)}
+.badge-tile .b-hint{font-size:.62rem; color:var(--muted); margin-top:.15rem; min-height:1.8em}
+.badge-tile.earned{border-color:var(--gold); background:linear-gradient(180deg,#2a2410,var(--bg2))}
+.badge-tile.earned .b-emoji{filter:none; opacity:1}
+.badge-tile.earned .b-name{color:var(--gold)}
+.badge-tile .b-share{margin-top:.35rem; font-size:.68rem; padding:.3rem .5rem; width:auto; background:transparent; border:1px solid var(--gold); color:var(--gold); border-radius:8px; cursor:pointer; font-weight:700}
+.badge-celebrate{text-align:center}
+.badge-big{font-size:4.5rem; line-height:1; animation:pop .5s ease}
+@keyframes pop{0%{transform:scale(.4); opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1); opacity:1}}
+.share-preview{width:100%; border-radius:12px; border:1px solid var(--line); margin:.75rem 0}
+.share-caption{width:100%; background:var(--bg2); border:1px solid var(--line); border-radius:12px; color:var(--text); padding:.7rem; font-size:.85rem; margin-bottom:.75rem; resize:none}
+#share-size-seg{margin-bottom:.25rem}
+@media (prefers-reduced-motion:reduce){.badge-big{animation:none}}
