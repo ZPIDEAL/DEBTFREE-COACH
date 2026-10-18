@@ -59,12 +59,12 @@ async function boot() {
   if (params.get('subscribed') === '1') {
     history.replaceState(null, '', '/app');
     try { ME = await api('GET', '/api/me'); } catch (e) { /* keep old */ }
-    try { if (window.fbq) fbq('track', 'StartTrial', { value: 9.99, currency: 'USD' }); } catch (e) {}
+    try { if (window._dfcPixelOn && window.fbq) fbq('track', 'StartTrial', { value: 9.99, currency: 'USD' }); } catch (e) {}
   }
   if (params.get('blueprint') === '1' && params.get('session_id')) {
     const sid = params.get('session_id');
     history.replaceState(null, '', '/app');
-    try { if (window.fbq) fbq('track', 'Purchase', { value: 19.00, currency: 'USD' }); } catch (e) {}
+    try { if (window._dfcPixelOn && window.fbq) fbq('track', 'Purchase', { value: 19.00, currency: 'USD' }); } catch (e) {}
     downloadBlueprint(sid).then(ok => {
       if (ok) setTimeout(() => alert('Your Blueprint is downloading.'), 300);
     });
@@ -89,6 +89,19 @@ function wireStatic() {
   $('auth-email').addEventListener('keydown', e => { if (e.key === 'Enter') doAuth(); });
   $('btn-checkout').onclick = doCheckout;
   $('btn-logout-1').onclick = doLogout;
+  // cookie-consent banner (Meta Pixel loads only on Accept)
+  try {
+    if (!localStorage.getItem('dfc-consent')) $('cookie-banner').classList.remove('hidden');
+  } catch (e) { /* storage unavailable: leave banner hidden, pixel never loads */ }
+  $('cookie-accept').onclick = () => {
+    try { localStorage.setItem('dfc-consent', 'accepted'); } catch (e) {}
+    $('cookie-banner').classList.add('hidden');
+    try { if (window.dfcEnableTracking) dfcEnableTracking(); } catch (e) {}
+  };
+  $('cookie-decline').onclick = () => {
+    try { localStorage.setItem('dfc-consent', 'declined'); } catch (e) {}
+    $('cookie-banner').classList.add('hidden');
+  };
 }
 
 /* ============================================================
