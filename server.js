@@ -196,6 +196,20 @@ app.post('/api/payments', auth.requireUser, auth.requireSubscription, (req, res)
   res.json({ debt: { ...debt, balance: newBalance }, payment: logged, plan: planFor(req.user.user_id) });
 });
 
+/* Payment history — drives the badge engine on the client. */
+app.get('/api/payments', auth.requireUser, auth.requireSubscription, (req, res) => {
+  res.json({ payments: store.getPayments(req.user.user_id) });
+});
+
+/* Badges: read the earned set, claim newly-earned ids (idempotent). */
+app.get('/api/badges', auth.requireUser, auth.requireSubscription, (req, res) => {
+  res.json({ badges: store.getBadges(req.user.user_id) });
+});
+app.post('/api/badges/claim', auth.requireUser, auth.requireSubscription, (req, res) => {
+  const ids = Array.isArray(req.body.badges) ? req.body.badges.slice(0, 20) : [];
+  res.json({ claimed: store.claimBadges(req.user.user_id, ids) });
+});
+
 /* Start over: wipes plan data, keeps the account + subscription. */
 app.delete('/api/reset', auth.requireUser, (req, res) => {
   store.resetUserData(req.user.user_id);
