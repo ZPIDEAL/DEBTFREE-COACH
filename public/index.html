@@ -305,6 +305,15 @@
       </div>
     </div>
 
+    <div class="card" id="badge-card">
+      <div class="card-head">
+        <h3>🏆 Badges</h3>
+        <span class="muted small" id="badge-count"></span>
+      </div>
+      <p class="muted small">Hit milestones, earn badges, share your wins. Every share is proof the plan works.</p>
+      <div id="badge-shelf" class="badge-shelf" aria-live="polite"></div>
+    </div>
+
     <div class="card">
       <div class="card-head">
         <h3>Payoff strategy</h3>
@@ -383,6 +392,34 @@
         <input id="pay-amount" type="number" min="1" step="1" placeholder="e.g. 300">
       </label>
       <button class="btn btn-primary" id="pay-save">Save payment</button>
+    </div>
+  </div>
+
+  <div id="badgemodal" class="modal hidden">
+    <div class="modal-card badge-celebrate">
+      <button class="icon-btn modal-close" id="badgemodal-close">✕</button>
+      <div class="badge-big" id="badgemodal-emoji">🏆</div>
+      <h2 id="badgemodal-name">Badge earned!</h2>
+      <p class="muted" id="badgemodal-desc"></p>
+      <button class="btn btn-primary" id="badgemodal-share">📣 Share this win</button>
+      <button class="btn btn-ghost btn-block" id="badgemodal-next">Keep going →</button>
+    </div>
+  </div>
+
+  <div id="sharemodal" class="modal hidden">
+    <div class="modal-card">
+      <button class="icon-btn modal-close" id="sharemodal-close">✕</button>
+      <h3>📣 Share your win</h3>
+      <div class="seg" id="share-size-seg" role="group" aria-label="Image size">
+        <button class="seg-btn active" data-size="square">Square (feed)</button>
+        <button class="seg-btn" data-size="story">Story (9:16)</button>
+      </div>
+      <img id="share-preview" class="share-preview" alt="Shareable badge graphic preview">
+      <textarea id="share-caption" class="share-caption" rows="4" readonly></textarea>
+      <button class="btn btn-primary" id="share-download">⬇️ Download image</button>
+      <button class="btn btn-ghost btn-block" id="share-copy">📋 Copy caption</button>
+      <button class="btn btn-ghost btn-block hidden" id="share-native">📲 Share…</button>
+      <p class="muted small">Post it wherever you hang out — the image and caption carry your trial link for anyone who asks how you did it.</p>
     </div>
   </div>
 
