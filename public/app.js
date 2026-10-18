@@ -59,10 +59,12 @@ async function boot() {
   if (params.get('subscribed') === '1') {
     history.replaceState(null, '', '/app');
     try { ME = await api('GET', '/api/me'); } catch (e) { /* keep old */ }
+    try { if (window.fbq) fbq('track', 'StartTrial', { value: 9.99, currency: 'USD' }); } catch (e) {}
   }
   if (params.get('blueprint') === '1' && params.get('session_id')) {
     const sid = params.get('session_id');
     history.replaceState(null, '', '/app');
+    try { if (window.fbq) fbq('track', 'Purchase', { value: 19.00, currency: 'USD' }); } catch (e) {}
     downloadBlueprint(sid).then(ok => {
       if (ok) setTimeout(() => alert('Your Blueprint is downloading.'), 300);
     });
