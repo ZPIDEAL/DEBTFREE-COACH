@@ -21,16 +21,22 @@
 <meta name="twitter:title" content="DebtFree Coach — Your Debt Exit Plan">
 <meta name="twitter:description" content="Build your personal debt payoff plan, then learn to invest with confidence. $9.99/mo with a 7-day free trial.">
 <link rel="stylesheet" href="/styles.css">
-<!-- Meta Pixel: ZP IDEAL GROUP Event Data (dataset 1681337335791472). Clean dataset, never fired; rename to "DebtFree Coach" in Events Manager if desired. -->
+<!-- Meta Pixel (consent-gated): ZP IDEAL GROUP Event Data (dataset 1681337335791472).
+     fbevents.js loads ONLY after the visitor accepts cookies in the banner (see wireStatic).
+     Declining (or ignoring) the banner = the Pixel never loads and nothing is sent to Meta. -->
 <script>
+window._dfcPixelId = '1681337335791472';
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-document,'script','https://connect.facebook.net/en_US/fbevents.js');
-try{fbq('init','1681337335791472');fbq('track','PageView');}catch(e){}
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];}(window,document,'script');
+function dfcEnableTracking(){try{
+if(window._dfcPixelOn||!window.fbq)return;window._dfcPixelOn=true;
+var t=document.createElement('script');t.async=true;
+t.src='https://connect.facebook.net/en_US/fbevents.js';
+t.onload=function(){try{fbq('init',window._dfcPixelId);fbq('track','PageView');}catch(e){}};
+document.head.appendChild(t);}catch(e){}}
+try{if(localStorage.getItem('dfc-consent')==='accepted')dfcEnableTracking();}catch(e){}
 </script>
-<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1681337335791472&ev=PageView&noscript=1"></noscript>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -503,5 +509,12 @@ try{fbq('init','1681337335791472');fbq('track','PageView');}catch(e){}
 <script src="/shared/coach.js"></script>
 <script src="/shared/academy.js"></script>
 <script src="/app.js"></script>
+  <div id="cookie-banner" class="cookie-banner hidden" role="dialog" aria-label="Cookie consent" aria-live="polite">
+    <p>We use cookies to keep you logged in — and, only if you allow it, the Meta Pixel to measure our ads. <a href="/privacy">Privacy Policy</a></p>
+    <div class="cookie-btns">
+      <button class="btn btn-primary" id="cookie-accept">Accept</button>
+      <button class="btn btn-ghost" id="cookie-decline">Decline</button>
+    </div>
+  </div>
 </body>
 </html>
