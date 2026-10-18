@@ -63,6 +63,12 @@ CREATE TABLE IF NOT EXISTS payments (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+CREATE TABLE IF NOT EXISTS badges (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  badge_id TEXT NOT NULL,
+  earned_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, badge_id)
+);
 CREATE TABLE IF NOT EXISTS subscriptions (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   stripe_customer_id TEXT,
@@ -203,6 +209,25 @@ function logPayment(userId, debtId, amount, note = '') {
     .run(userId, debtId, amount, note);
   return db.prepare('SELECT * FROM payments WHERE id=?').get(r.lastInsertRowid);
 }
+const getPayments = userId =>
+  db.prepare('SELECT id, debt_id, amount, created_at FROM payments WHERE user_id=? ORDER BY created_at ASC, id ASC').all(userId);
+
+/* ---- badges ---- */
+const getBadges = userId =>
+  db.prepare('SELECT badge_id, earned_at FROM badges WHERE user_id=? ORDER BY earned_at ASC').all(userId);
+function claimBadges(userId, ids) {
+  const ins = db.prepare('INSERT OR IGNORE INTO badges (user_id, badge_id) VALUES (?, ?)');
+  const claimed = [];
+  const tx = db.transaction(list => {
+    for (const id of list) {
+      if (typeof id !== 'string' || !/^[a-z0-9-]{1,40}$/.test(id)) continue;
+      const r = ins.run(userId, id);
+      if (r.changes > 0) claimed.push(id);
+    }
+  });
+  tx(ids);
+  return claimed;
+}
 
 /* ---- subscriptions ---- */
 const getSubscription = userId =>
@@ -277,6 +302,7 @@ function recordBlueprintPurchase(userId, sessionId, amountCents) {
 function resetUserData(userId) {
   const tx = db.transaction(uid => {
     db.prepare('DELETE FROM payments WHERE user_id=?').run(uid);
+    db.prepare('DELETE FROM badges WHERE user_id=?').run(uid);
     db.prepare('DELETE FROM debts WHERE user_id=?').run(uid);
     db.prepare('DELETE FROM profiles WHERE user_id=?').run(uid);
   });
@@ -288,7 +314,7 @@ module.exports = {
   createSession, getSession, deleteSession,
   getProfile, upsertProfile, saveDraftProfile,
   getDebts, addDebt, updateDebt, deleteDebt, setDebtBalance, replaceDebts,
-  logPayment, getSubscription, upsertSubscription, setSubscriptionStatus,
+  logPayment, getPayments, getBadges, claimBadges, getSubscription, upsertSubscription, setSubscriptionStatus,
   recordTermsAcceptance, getTermsAcceptances,
   getSaveOffer, markDownsellUsed, recordCancelReason, markOtoOffered,
   hasBlueprintPurchase, recordBlueprintPurchase,
