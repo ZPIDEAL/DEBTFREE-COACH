@@ -20,6 +20,7 @@
     'Should I invest or pay debt?',
     'Avalanche vs snowball?',
     'How am I doing?',
+    'Why do I keep overspending?',
     'Motivate me 💪'
   ];
 
@@ -94,6 +95,35 @@
     /* slipped / discouraged */
     if (has('slip', 'missed', 'late payment', 'fell off', 'gave up', 'discourag', 'depress', 'ashamed', 'embarrass')) {
       return `Hey — breathe, ${name}. 💛 One missed payment or rough month doesn't erase your plan; it just moves the date. Here's the reset:<br><br>1️⃣ Make at least the minimums <em>today</em> to stop fees<br>2️⃣ Call the creditor — hardship programs exist and they want your money, not your fees<br>3️⃣ Re-run your plan tomorrow with fresh eyes<br><br>If debt ever feels unmanageable, nonprofit credit counselors (like NFCC member agencies) help for free or nearly free. No shame in getting a co-pilot.`;
+    }
+    /* ---- behavioral traps: the habits that build unmanageable debt ---- */
+    /* emotional spending */
+    if (!has('motivat') && has('emotional', 'overspend', 'stress spend', 'stressed', 'boredom', 'bored', 'retail therapy', 'shopping when', 'sad spend')) {
+      return `The spending usually isn't about the thing, ${name} — it's about the feeling underneath. That's not a character flaw; it's how brains are wired. The fix isn't willpower, it's a pause:<br><br>🛑 <strong>The 24-hour rule:</strong> want it? Wait a day. Still want it tomorrow? Then it was a real want, not a feeling.<br>📝 <strong>Name it first:</strong> "I'm stressed, not under-accessorized." Feelings pass faster once they're named.<br>🔁 <strong>Swap the hit:</strong> the dopamine comes from the <em>buying</em>, not the owning — a walk, a finished chore, or a call with someone you like gives the same lift for free.<br><br>For one week, jot down what you were feeling before each unplanned purchase. You'll see your pattern — and patterns can be redesigned. What's been triggering yours lately?`;
+    }
+    /* lifestyle inflation / keeping up */
+    if (has('lifestyle', 'keeping up', 'deserve it', 'i deserve', 'lifestyle creep')) {
+      return `Lifestyle inflation is the quietest debt-builder there is, ${name} — every raise becomes a nicer car, a bigger place, a fancier brunch, and the debt-free date never moves closer. Try the <strong>50/50 rule</strong>: half of every raise, bonus, or new income goes to your debt target; you keep the other half to enjoy. You still feel the raise — but your finish line moves too.<br><br>The reframe: it's not "I can't have nice things." It's "I'm buying my freedom date first, then the nice things with cash." Which upgrade has been tempting you most? Let's run what killing it does to your date. 📅`;
+    }
+    /* money avoidance */
+    if (has('afraid', 'scared to look', 'head in the sand', 'avoid looking', "haven't looked", 'too scared', 'anxiety about money')) {
+      return `You're not alone in this, ${name} — most people with growing debt avoid looking at it, and avoiding it is exactly what lets it grow. Here's the way back in:<br><br>📅 <strong>The 10-minute money date:</strong> same time every week, just <em>look</em> — balances, due dates, nothing else. No fixing, no judging. Looking is the brave part; the numbers are just numbers.<br><br>Your debt grows in the dark and shrinks the moment you turn the light on. You already did the hardest part by opening this app. Want to do this week's money date together right now?`;
+    }
+    /* BNPL stacking */
+    if (has('afterpay', 'klarna', 'affirm', 'bnpl', 'pay in 4', 'buy now pay later', 'split it into payments')) {
+      return `Buy-now-pay-later feels like free money because each plan is "only" $35 — but six plans at once is a $210 invisible bill with four different due dates, ${name}. That's the stacking trap.<br><br>Do this today:<br>1️⃣ List every active split-payment plan with its remaining payments<br>2️⃣ Add the total — that's a real debt; add it to your list in the app so your plan sees it<br>3️⃣ New rule: <strong>no new split payments until the existing ones are dead</strong><br><br>BNPL isn't evil — it's just debt wearing a friendly costume. Once it's all in one place, your payoff order handles it like everything else. How many active plans do you have right now?`;
+    }
+    /* social pressure spending */
+    if (has('fomo', 'peer pressure', 'keeping up with', 'brunch', 'everyone else is', 'they all have', "can't afford the trip", 'girls trip', 'bachelor')) {
+      return `Real talk, ${name}: most people respect a boundary way more than we fear they'll judge it. And the brunch you can't afford is forgotten in a week — the interest on it isn't. Keep these in your pocket:<br><br>💬 <strong>"Not in the budget this month — next time!"</strong> (a complete sentence, no apology needed)<br>💬 <strong>"I'll sit this one out, but let's do [cheaper thing] Saturday?"</strong> — you keep the friendship, skip the bill<br><br>The people worth keeping don't keep score on your spending. And every "no" to a $80 brunch is $80 closer to never needing to say no again. Which invitation has been stressing you out?`;
+    }
+    /* all-or-nothing thinking */
+    if (has('blew it', 'ruined everything', 'all or nothing', 'messed up', 'off the wagon', 'one mistake', 'whats the point')) {
+      return `Your plan isn't glass, ${name} — it's a road. One detour doesn't total the car. Let's do the actual math instead of the shame math: a $200 overspend on a $20,000 payoff plan moves your debt-free date by roughly <strong>two weeks</strong> — not to "never."<br><br>The danger was never the slip; it's the story "I already blew it, so why bother" — <em>that's</em> what turns $200 into $2,000. So:<br>1️⃣ Log what happened (no judgment, just data)<br>2️⃣ Look at your date — it's still there<br>3️⃣ Keep driving<br><br>Perfection was never the plan. Persistence is. What tripped you up?`;
+    }
+    /* procrastination */
+    if (has('procrastinat', "i'll start", 'i will start', 'someday', 'start tomorrow', "haven't started", 'never get around')) {
+      return `Here's the secret about motivation, ${name}: it follows action, it doesn't come before it. You don't need to feel ready — you need a first step so small it feels silly:<br><br>⏱️ <strong>The 10-minute start:</strong> enter just <em>one</em> debt in the app. That's it. One debt, ten minutes, done.<br><br>Starting imperfectly beats planning perfectly, because "someday" has no debt-free date and today does. Your date is already calculated — it's just waiting for you to start the clock. Want to enter that first debt together right now?`;
     }
     /* progress */
     if (has('how am i', 'progress', 'status', 'am i doing')) {
