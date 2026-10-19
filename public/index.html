@@ -347,6 +347,16 @@ try{if(localStorage.getItem('dfc-consent')==='accepted')dfcEnableTracking();}cat
       <p class="muted small">The easiest win in debt payoff: <strong>automate at least the minimum payment on every debt</strong>. No missed due dates, no $30 late fees, no interest-rate penalty hikes — your plan runs even in your busiest month.</p>
       <p class="muted small">How to do it: in each lender's app or site, set automatic payments for the minimum (or more) a day or two after payday. Keep a small buffer in checking so a payment never overdrafts, and check the first automated statement to confirm it ran.</p>
       <p class="muted small">Set it up, then claim your <strong>⚙️ Autopilot badge</strong> below — and ask me anything about it in the Coach tab.</p>
+      <div class="autopay-alt">
+        <p class="muted small"><strong>Not comfortable with autopay?</strong> No problem — download calendar reminders instead. One monthly reminder per debt, with alerts 3 days and 1 day before, ready to import into Google Calendar, Apple Calendar, or Outlook.</p>
+        <div class="reminder-row">
+          <label class="muted small" for="reminder-day">Remind me on the</label>
+          <select id="reminder-day"></select>
+          <label class="muted small">of each month</label>
+          <button id="dl-reminders" class="btn-small">📅 Download reminders (.ics)</button>
+        </div>
+        <p class="muted small">Google Calendar: Settings → Import &amp; export → select the file. Apple/Outlook: just open the file.</p>
+      </div>
     </div>
 
     <div class="card">
