@@ -763,6 +763,7 @@ async function bootChat() {
     `💳 Total debt: <strong>${P.money(total)}</strong><br>` +
     `📅 Debt-free date: <strong>${plan.months !== null && !plan.stalled ? P.monthName(plan.months) : "not yet — let's fix that"}</strong><br>` +
     `💸 Interest on your current path: <strong>${plan.months !== null && !plan.stalled ? P.money(plan.interest) : 'growing'}</strong><br><br>` +
+    `⚙️ Pro tip: automating your minimums is the easiest win there is — ask me about autopay.<br><br>` +
     `Ask me anything — try a what-if, log a payment, or tap a suggestion below.`), 400);
 }
 async function handleUser(text) {
@@ -803,6 +804,11 @@ const BADGES = [
     stat: s => `Debt-free date: ${s.plan && s.plan.months ? P.monthName(s.plan.months) : '—'}`,
     test: s => (s.onboarded && s.debts.length)
       ? { earned: true } : { earned: false, hint: 'Finish setup' } },
+  { id: 'autopilot', emoji: '⚙️', name: 'Autopilot', manual: true,
+    desc: 'You automated your payments. The plan now runs itself.',
+    stat: () => 'Payments on autopilot',
+    test: () => EARNED_BADGES.has('autopilot')
+      ? { earned: true } : { earned: false, hint: 'Automate payments, then claim' } },
   { id: 'first-payment', emoji: '💪', name: 'First Strike',
     desc: 'First payment logged. The plan is in motion.',
     stat: s => `${P.money(s.totalPaid)} paid so far`,
@@ -852,6 +858,7 @@ function badgeState(plan) {
 
 async function refreshBadges(plan) {
   if (!$('badge-shelf')) return;
+  window.__lastPlan = plan || null;
   if (MODE === 'account') {
     try {
       const [ph, bh] = await Promise.all([api('GET', '/api/payments'), api('GET', '/api/badges')]);
@@ -886,11 +893,26 @@ function renderBadgeShelf(results) {
       `<div class="b-emoji">${x.def.emoji}</div>` +
       `<div class="b-name">${x.def.name}</div>` +
       `<div class="b-hint">${earned ? (x.stat || '') : P.esc(x.r.hint || 'Locked')}</div>` +
-      (earned ? `<button class="b-share" data-badge="${x.def.id}">📣 Share</button>` : '') +
+      (earned ? `<button class="b-share" data-badge="${x.def.id}">📣 Share</button>`
+        : (x.def.manual ? `<button class="b-share" data-claim="${x.def.id}">✓ I did it</button>` : '')) +
       `</div>`;
   }).join('');
   document.querySelectorAll('.b-share').forEach(b =>
     b.onclick = () => openShare(b.dataset.badge));
+  document.querySelectorAll('[data-claim]').forEach(b =>
+    b.onclick = () => claimManualBadge(b.dataset.claim));
+}
+
+async function claimManualBadge(id) {
+  const def = badgeById(id);
+  if (!def || !def.manual || EARNED_BADGES.has(id)) return;
+  if (MODE === 'account') {
+    try { await api('POST', '/api/badges/claim', { badges: [id] }); }
+    catch (e) { alert('Could not save that just yet — try again.'); return; }
+  }
+  EARNED_BADGES.add(id);
+  badgeQueue.push(id);
+  await refreshBadges(window.__lastPlan || null);
 }
 
 function showNextBadgeCelebration() {
