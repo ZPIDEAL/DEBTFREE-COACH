@@ -249,3 +249,10 @@ input[type=range]{accent-color:var(--green); margin:1rem 0 .5rem}
 .cookie-banner a{color:var(--gold)}
 .cookie-btns{display:flex;gap:.5rem}
 .cookie-btns .btn{width:auto;padding:.6rem 1.1rem;font-size:.9rem;margin:0}
+
+/* ---------- Autopay card + calendar reminders ---------- */
+.autopay-alt{margin-top:1rem; padding-top:1rem; border-top:1px solid var(--line)}
+.reminder-row{display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; margin:.5rem 0}
+.reminder-row select{background:var(--bg2); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:.35rem .5rem; font-size:.85rem}
+.btn-small{width:auto; padding:.45rem .9rem; font-size:.82rem; font-weight:700; border-radius:10px; border:1px solid var(--gold); background:transparent; color:var(--gold); cursor:pointer}
+.btn-small:hover{background:rgba(212,175,55,.12)}
