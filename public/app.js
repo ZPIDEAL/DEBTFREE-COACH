@@ -341,7 +341,67 @@ function enterApp() {
   showScreen('screen-app');
   renderBanner();
   initApp();
+  initReminders();
   refreshAll();
+}
+
+/* ---------------- PAYMENT REMINDER .ics ----------------
+   Client-side generator: one monthly all-day event per active debt,
+   with advance alerts 3 days and 1 day before. Imports into
+   Google Calendar, Apple Calendar, and Outlook. */
+function icsEsc(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+}
+function icsDateUTC(d) {
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}T${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}Z`;
+}
+function icsDateLocal(d) {
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`;
+}
+function buildReminderICS(debts, day) {
+  const now = new Date();
+  let y = now.getFullYear(), m = now.getMonth();
+  if (now.getDate() > day) { m += 1; if (m > 11) { m = 0; y += 1; } }
+  const first = new Date(y, m, day);
+  const stamp = icsDateUTC(now);
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//DebtFree Coach//Payment Reminders//EN', 'CALSCALE:GREGORIAN'];
+  debts.forEach((d, i) => {
+    const name = icsEsc(d.name || `Debt ${i + 1}`);
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:dfc-reminder-${d.id || i}-${Date.now()}@getdebtfreecoach.com`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;VALUE=DATE:${icsDateLocal(first)}`,
+      'RRULE:FREQ=MONTHLY',
+      `SUMMARY:Pay ${name} — ${icsEsc(P.money(d.min || 0))}/mo minimum due`,
+      `DESCRIPTION:DebtFree Coach reminder: pay at least ${icsEsc(P.money(d.min || 0))} toward ${name} (balance ${icsEsc(P.money(d.balance || 0))}\\, ${d.apr || 0}% APR). Extra payments go to your top target.`,
+      'BEGIN:VALARM', 'TRIGGER:-P3D', 'ACTION:DISPLAY', `DESCRIPTION:3 days left: ${name} payment due`, 'END:VALARM',
+      'BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY', `DESCRIPTION:Tomorrow: ${name} payment due`, 'END:VALARM',
+      'END:VEVENT'
+    );
+  });
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+function initReminders() {
+  const sel = $('reminder-day'), btn = $('dl-reminders');
+  if (!sel || !btn) return;
+  sel.innerHTML = Array.from({ length: 28 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+  sel.value = '1';
+  btn.onclick = () => {
+    const debts = (ctx().debts || []).filter(d => d.balance > 0);
+    if (!debts.length) { alert('Add your debts first — then come back for reminders.'); return; }
+    const ics = buildReminderICS(debts, +sel.value || 1);
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'debtfree-coach-payment-reminders.ics';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  };
 }
 
 function renderBanner() {
@@ -805,10 +865,10 @@ const BADGES = [
     test: s => (s.onboarded && s.debts.length)
       ? { earned: true } : { earned: false, hint: 'Finish setup' } },
   { id: 'autopilot', emoji: '⚙️', name: 'Autopilot', manual: true,
-    desc: 'You automated your payments. The plan now runs itself.',
-    stat: () => 'Payments on autopilot',
+    desc: 'Your payments are handled — autopay on, or reminders set. Never miss.',
+    stat: () => 'Payments handled',
     test: () => EARNED_BADGES.has('autopilot')
-      ? { earned: true } : { earned: false, hint: 'Automate payments, then claim' } },
+      ? { earned: true } : { earned: false, hint: 'Autopay or reminders, then claim' } },
   { id: 'first-payment', emoji: '💪', name: 'First Strike',
     desc: 'First payment logged. The plan is in motion.',
     stat: s => `${P.money(s.totalPaid)} paid so far`,
