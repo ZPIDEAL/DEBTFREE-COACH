@@ -19,6 +19,23 @@
 <meta name="twitter:description" content="Your debt has an expiration date. Find it in 60 seconds — no signup, no email, no account.">
 <link rel="stylesheet" href="/styles.css">
 <script src="/shared/payoff.js"></script>
+<!-- Meta Pixel (consent-gated): same dataset as the main site (1681337335791472).
+     fbevents.js loads ONLY after the visitor accepts cookies in the banner below.
+     Declining (or ignoring) the banner = the Pixel never loads and nothing is sent to Meta.
+     The Pixel records a PageView only — it never sees what anyone types into the calculator. -->
+<script>
+window._dfcPixelId = '1681337335791472';
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];}(window,document,'script');
+function dfcEnableTracking(){try{
+if(window._dfcPixelOn||!window.fbq)return;window._dfcPixelOn=true;
+var t=document.createElement('script');t.async=true;
+t.src='https://connect.facebook.net/en_US/fbevents.js';
+t.onload=function(){try{fbq('init',window._dfcPixelId);fbq('track','PageView');}catch(e){}};
+document.head.appendChild(t);}catch(e){}}
+try{if(localStorage.getItem('dfc-consent')==='accepted')dfcEnableTracking();}catch(e){}
+</script>
 <style>
   .w-wrap{max-width:560px;margin:0 auto;padding:2rem 1.25rem 3rem}
   .w-wrap h1{font-size:2rem;margin:.5rem 0 .25rem;text-align:center}
@@ -84,8 +101,34 @@
     </div>
   </div>
 
-  <p class="fineprint">Education only — this is not financial advice, and it is not a personalized recommendation. Results are estimates: they assume your APRs and minimums stay the same, you make every payment on time, and you add no new charges. Your real payoff date depends on your actual creditor terms. DebtFree Coach is a debt-payoff planning and investing-education tool; it does not negotiate with creditors, settle debts, or change your interest rates. <a href="/terms" style="color:var(--blue)">Terms</a> · <a href="/privacy" style="color:var(--blue)">Privacy</a></p>
+  <p class="fineprint">Education only — this is not financial advice, and it is not a personalized recommendation. Results are estimates: they assume your APRs and minimums stay the same, you make every payment on time, and you add no new charges. Your real payoff date depends on your actual creditor terms. DebtFree Coach is a debt-payoff planning and investing-education tool; it does not negotiate with creditors, settle debts, or change your interest rates. Tracking: this page loads the Meta Pixel only if you accept cookies — it counts the visit for our ads and never sees what you type into the calculator. <a href="/terms" style="color:var(--blue)">Terms</a> · <a href="/privacy" style="color:var(--blue)">Privacy</a></p>
 </div>
+
+<div id="cookie-banner" class="cookie-banner hidden" role="dialog" aria-label="Cookie consent" aria-live="polite" style="position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-top:1px solid var(--line);padding:1rem 1.25rem">
+  <p style="margin:0 0 .75rem;font-size:.95rem">Can we count your visit? Accepting lets us measure visits with the Meta Pixel, so we can show DebtFree Coach to more people working on debt. Your calculator numbers never leave this page. <a href="/privacy" style="color:var(--blue)">Privacy Policy</a></p>
+  <div style="display:flex;gap:.5rem">
+    <button class="btn btn-primary" id="cookie-accept" type="button" style="width:auto">Accept</button>
+    <button class="btn btn-ghost" id="cookie-decline" type="button">Decline</button>
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+  function $(id) { return document.getElementById(id); }
+  try {
+    if (!localStorage.getItem('dfc-consent')) $('cookie-banner').classList.remove('hidden');
+  } catch (e) { /* storage unavailable: banner stays hidden, pixel never loads */ }
+  $('cookie-accept').addEventListener('click', function () {
+    try { localStorage.setItem('dfc-consent', 'accepted'); } catch (e) {}
+    $('cookie-banner').classList.add('hidden');
+    try { if (window.dfcEnableTracking) dfcEnableTracking(); } catch (e) {}
+  });
+  $('cookie-decline').addEventListener('click', function () {
+    try { localStorage.setItem('dfc-consent', 'declined'); } catch (e) {}
+    $('cookie-banner').classList.add('hidden');
+  });
+})();
+</script>
 
 <script>
 (function () {
