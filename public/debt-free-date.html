@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>When Will You Be Debt-Free? — DebtFree Coach</title>
+<meta name="description" content="Enter your balances, APRs, and minimum payments and see your real debt-free date — no signup, no email, no account. Free from DebtFree Coach.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon.png">
+<meta name="theme-color" content="#0e3b22">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DebtFree Coach">
+<meta property="og:title" content="When Will You Be Debt-Free? — DebtFree Coach">
+<meta property="og:description" content="Your debt has an expiration date. Find it in 60 seconds — no signup, no email, no account.">
+<meta property="og:url" content="https://getdebtfreecoach.com/debt-free-date">
+<meta property="og:image" content="https://getdebtfreecoach.com/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="When Will You Be Debt-Free? — DebtFree Coach">
+<meta name="twitter:description" content="Your debt has an expiration date. Find it in 60 seconds — no signup, no email, no account.">
+<link rel="stylesheet" href="/styles.css">
+<script src="/shared/payoff.js"></script>
+<style>
+  .w-wrap{max-width:560px;margin:0 auto;padding:2rem 1.25rem 3rem}
+  .w-wrap h1{font-size:2rem;margin:.5rem 0 .25rem;text-align:center}
+  .w-sub{text-align:center;color:var(--muted);margin:0 0 1.5rem}
+  .w-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem}
+  .w-card h2{font-size:1.1rem;margin:0 0 .75rem}
+  .debt-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.75rem;padding-bottom:.75rem;border-bottom:1px solid var(--line)}
+  .debt-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+  .debt-row label{font-size:.85rem;color:var(--muted);display:block;margin-bottom:.25rem}
+  .debt-row input{margin-bottom:0}
+  .debt-row .full{grid-column:1 / -1}
+  .rm-btn{background:none;border:none;color:var(--red);font-size:.85rem;cursor:pointer;padding:.25rem 0;text-decoration:underline}
+  .seg{display:inline-flex;gap:.5rem;margin-bottom:.9rem}
+  .seg button{background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:.5rem 1rem;font-size:.95rem;cursor:pointer}
+  .seg button.sel{background:var(--green);color:#04120a;border-color:var(--green);font-weight:700}
+  .res-big{font-size:1.7rem;font-weight:800;text-align:center;margin:.5rem 0}
+  .res-line{text-align:center;font-size:1.05rem;margin:.25rem 0}
+  .res-line b{color:var(--green)}
+  .res-warn{color:var(--red)}
+  .cta-wrap{text-align:center;margin-top:1.25rem}
+  .fineprint{font-size:.78rem;color:var(--muted);margin-top:1.25rem}
+  .example-link{background:none;border:none;color:var(--blue);font-size:.95rem;cursor:pointer;text-decoration:underline;padding:0}
+</style>
+</head>
+<body>
+<div class="w-wrap">
+  <div style="text-align:center;font-size:3rem">💰</div>
+  <p style="text-align:center;color:var(--muted);margin:0">DebtFree Coach</p>
+  <h1>Your debt has an expiration date.</h1>
+  <p class="w-sub">Enter your real numbers and see it. No signup. No email. No account. Nothing you type ever leaves this page.</p>
+
+  <div class="w-card">
+    <h2>Your debts</h2>
+    <div id="debt-rows"></div>
+    <button class="btn btn-ghost" id="add-debt" type="button">+ Add another debt</button>
+    <p style="margin:1rem 0 0;font-size:.9rem;color:var(--muted)">Not sure where to start? <button class="example-link" id="try-example" type="button">Try an example</button></p>
+  </div>
+
+  <div class="w-card">
+    <h2>Extra toward debt each month</h2>
+    <label for="extra" style="font-size:.9rem;color:var(--muted);display:block;margin-bottom:.5rem">On top of all your minimums — even $50 changes the date.</label>
+    <input id="extra" type="number" inputmode="decimal" min="0" step="1" value="0" placeholder="0">
+    <h2 style="margin-top:1rem">Payoff order</h2>
+    <div class="seg" role="group" aria-label="Payoff strategy">
+      <button type="button" id="strat-avalanche" class="sel">Avalanche ⚡ — highest APR first (cheapest)</button>
+      <button type="button" id="strat-snowball">Snowball ⛄ — smallest balance first (fast wins)</button>
+    </div>
+    <button class="btn btn-primary" id="calc" type="button">Show my debt-free date →</button>
+    <p id="calc-error" class="error" style="display:none"></p>
+  </div>
+
+  <div class="w-card" id="results" style="display:none">
+    <h2>Your date</h2>
+    <p class="res-big" id="res-date">—</p>
+    <p class="res-line" id="res-months"></p>
+    <p class="res-line" id="res-interest"></p>
+    <p class="res-line" id="res-vs-min" style="margin-top:.75rem"></p>
+    <p class="res-line res-warn" id="res-stalled" style="display:none"></p>
+    <div class="cta-wrap">
+      <p style="color:var(--muted);margin-bottom:.5rem">Want the full month-by-month plan that hits this date — and a coach that keeps you on it?</p>
+      <a class="btn btn-primary" style="display:block;text-decoration:none;text-align:center" href="/?utm_source=debt-free-date-widget&amp;utm_medium=widget&amp;utm_campaign=debt-free-date">Get my full plan — 7-day free trial →</a>
+      <p class="microtrust" style="color:var(--muted);font-size:.9rem;margin-top:.5rem">7-day free trial · Card required · Cancel during the trial and pay nothing · No bank login required</p>
+    </div>
+  </div>
+
+  <p class="fineprint">Education only — this is not financial advice, and it is not a personalized recommendation. Results are estimates: they assume your APRs and minimums stay the same, you make every payment on time, and you add no new charges. Your real payoff date depends on your actual creditor terms. DebtFree Coach is a debt-payoff planning and investing-education tool; it does not negotiate with creditors, settle debts, or change your interest rates. <a href="/terms" style="color:var(--blue)">Terms</a> · <a href="/privacy" style="color:var(--blue)">Privacy</a></p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var P = window.DFCPayoff;
+  var rowsEl = document.getElementById('debt-rows');
+  var rowCount = 0;
+
+  function addRow(prefill) {
+    if (rowCount >= 8) return;
+    rowCount++;
+    var div = document.createElement('div');
+    div.className = 'debt-row';
+    div.innerHTML =
+      '<div class="full"><label>Debt name (optional)</label><input class="d-name" type="text" placeholder="e.g. Credit card" value="' + (prefill && prefill.name ? P.esc(prefill.name) : '') + '"></div>' +
+      '<div><label>Balance ($)</label><input class="d-bal" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" value="' + (prefill ? prefill.balance : '') + '"></div>' +
+      '<div><label>APR (%)</label><input class="d-apr" type="number" inputmode="decimal" min="0" max="100" step="0.01" placeholder="0" value="' + (prefill ? prefill.apr : '') + '"></div>' +
+      '<div><label>Minimum payment ($/mo)</label><input class="d-min" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" value="' + (prefill ? prefill.min : '') + '"></div>' +
+      '<div><button type="button" class="rm-btn">Remove</button></div>';
+    div.querySelector('.rm-btn').addEventListener('click', function () { div.remove(); rowCount--; });
+    rowsEl.appendChild(div);
+  }
+
+  addRow(); addRow();
+
+  document.getElementById('add-debt').addEventListener('click', function () { addRow(); });
+  document.getElementById('try-example').addEventListener('click', function () {
+    rowsEl.innerHTML = ''; rowCount = 0;
+    addRow({ name: 'Store card', balance: 4200, apr: 24.99, min: 105 });
+    addRow({ name: 'Credit card', balance: 8900, apr: 18.9, min: 210 });
+    document.getElementById('extra').value = 150;
+    calculate();
+  });
+
+  var strategy = 'avalanche';
+  function setStrat(s) {
+    strategy = s;
+    document.getElementById('strat-avalanche').className = s === 'avalanche' ? 'sel' : '';
+    document.getElementById('strat-snowball').className = s === 'snowball' ? 'sel' : '';
+  }
+  document.getElementById('strat-avalanche').addEventListener('click', function () { setStrat('avalanche'); });
+  document.getElementById('strat-snowball').addEventListener('click', function () { setStrat('snowball'); });
+
+  function showError(msg) {
+    var el = document.getElementById('calc-error');
+    if (!msg) { el.style.display = 'none'; el.textContent = ''; return; }
+    el.style.display = 'block'; el.textContent = msg;
+  }
+
+  function readDebts() {
+    var debts = [], i = 0;
+    rowsEl.querySelectorAll('.debt-row').forEach(function (row) {
+      var bal = parseFloat(row.querySelector('.d-bal').value);
+      var apr = parseFloat(row.querySelector('.d-apr').value);
+      var min = parseFloat(row.querySelector('.d-min').value);
+      if (isNaN(bal) || isNaN(apr) || isNaN(min)) return;
+      debts.push({ id: 'd' + (i++), name: row.querySelector('.d-name').value || 'Debt ' + i, balance: bal, apr: apr, min: min });
+    });
+    return debts;
+  }
+
+  function calculate() {
+    showError('');
+    var debts = readDebts().filter(function (d) { return d.balance > 0; });
+    if (!debts.length) { showError('Add at least one debt with a balance above $0.'); return; }
+    var bad = debts.some(function (d) { return d.apr < 0 || d.apr > 100 || d.min < 0; });
+    if (bad) { showError('Check your numbers: APR must be 0–100 and minimums can\'t be negative.'); return; }
+    var extra = parseFloat(document.getElementById('extra').value) || 0;
+    if (extra < 0) { showError('Extra payment can\'t be negative.'); return; }
+
+    var plan = P.simulatePayoff(P.activeDebts(debts), extra, strategy);
+    var base = P.simulatePayoff(P.activeDebts(debts), 0, strategy);
+    var res = document.getElementById('results');
+    var stalledEl = document.getElementById('res-stalled');
+    stalledEl.style.display = 'none';
+
+    if (plan.stalled) {
+      document.getElementById('res-date').textContent = 'Not on this payment';
+      document.getElementById('res-months').textContent = 'Even with $' + Math.round(extra) + '/mo extra, these payments don\'t cover the interest — the balance keeps growing.';
+      document.getElementById('res-interest').textContent = '';
+      document.getElementById('res-vs-min').textContent = 'Try a bigger extra payment, or a lower APR, and run it again. The math is honest even when it stings.';
+      res.style.display = 'block';
+      res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    document.getElementById('res-date').textContent = 'Debt-free by ' + P.monthName(plan.months);
+    document.getElementById('res-months').textContent = 'That\'s ' + plan.months + ' months from now, paying ' + P.money(plan.interest) + ' in interest along the way.';
+    if (!base.stalled && base.months > plan.months) {
+      document.getElementById('res-vs-min').innerHTML = 'On minimums alone: ' + P.monthName(base.months) + ' (' + base.months + ' months, ' + P.money(base.interest) + ' interest). Your plan saves <b>' + (base.months - plan.months) + ' months and ' + P.money(base.interest - plan.interest) + '</b>.';
+    } else if (base.stalled) {
+      document.getElementById('res-vs-min').innerHTML = 'On minimums alone, this debt <b>never gets paid off</b> — the minimums don\'t cover the interest. Your plan is the difference between stuck and free.';
+    } else {
+      document.getElementById('res-vs-min').textContent = 'Add an extra payment above to see how much sooner you could be free.';
+    }
+    res.style.display = 'block';
+    res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  document.getElementById('calc').addEventListener('click', calculate);
+})();
+</script>
+</body>
+</html>
