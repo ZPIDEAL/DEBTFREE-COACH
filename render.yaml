@@ -28,3 +28,7 @@ services:
         sync: false # from the webhook endpoint you create in Stripe
       - key: STRIPE_PRICE_ID
         sync: false # price_... of your $9.99/mo recurring price
+      - key: TIKTOK_SANDBOX_CLIENT_KEY
+        sync: false # set in the Render dashboard (sandbox app key, demo only)
+      - key: TIKTOK_SANDBOX_CLIENT_SECRET
+        sync: false # set in the Render dashboard (sandbox app secret, demo only)
