@@ -17,6 +17,7 @@ const billing = require('./stripe');
 const P = require('./shared/payoff');
 const { coachReply, CHIPS } = require('./shared/coach');
 const { ACADEMY, buildPath } = require('./shared/academy');
+const tiktokDemo = require('./tiktok-demo');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -342,6 +343,9 @@ app.get('/privacy', (_req, res) => {
 app.get('/refunds', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'legal', 'refunds.html'));
 });
+
+/* ---------- TikTok sandbox demo (review demo; not the live feature) ---------- */
+app.use('/tiktok-demo', tiktokDemo());
 
 /* ---------- SPA fallback ---------- */
 app.get('*', (_req, res) => {
