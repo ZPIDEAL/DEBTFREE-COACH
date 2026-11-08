@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="google-site-verification" content="lnXXMX8l8HEGMPHrnaUyQeOR9A1c1yQZDWDm67zUQhM">     
+<meta name="google-site-verification" content="lnXXMX8l8HEGMPHrnaUyQeOR9A1c1yQZDWDm67zUQhM">
 <title>DebtFree Coach — Your Debt Exit Plan + Investing Education</title>
 <meta name="description" content="A personal debt payoff coach and investing education companion. Build your exit plan from debt, then learn to invest with confidence. 7-day free trial.">
 <!-- SITE_DOMAIN: swap to custom domain when it goes live (also update og:url / og:image below) -->
@@ -37,6 +37,22 @@ t.src='https://connect.facebook.net/en_US/fbevents.js';
 t.onload=function(){try{fbq('init',window._dfcPixelId);fbq('track','PageView');}catch(e){}};
 document.head.appendChild(t);}catch(e){}}
 try{if(localStorage.getItem('dfc-consent')==='accepted')dfcEnableTracking();}catch(e){}
+</script>
+<!-- ManyChat Pixel (consent-gated, same rule as the Meta Pixel):
+     loads ONLY after the visitor accepts cookies in the banner.
+     Lets ManyChat attribute trial starts and purchases to the DM flows
+     that sent the visitor. NOTE: ManyChat Pixel is a paid-plan feature —
+     it stops working when the account drops to Free (Essential ends Dec 2, 2026). -->
+<script>
+function dfcEnableManychatPixel(){try{
+if(window._dfcMCPixelOn)return;window._dfcMCPixelOn=true;
+var s1=document.createElement('script');s1.async=true;
+s1.src='//widget.manychat.com/619463_65f65.js';
+document.head.appendChild(s1);
+var s2=document.createElement('script');s2.async=true;
+s2.src='https://mccdn.me/assets/js/widget.js';
+document.head.appendChild(s2);}catch(e){}}
+try{if(localStorage.getItem('dfc-consent')==='accepted')dfcEnableManychatPixel();}catch(e){}
 </script>
 </head>
 <body>
