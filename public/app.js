@@ -60,11 +60,13 @@ async function boot() {
     history.replaceState(null, '', '/app');
     try { ME = await api('GET', '/api/me'); } catch (e) { /* keep old */ }
     try { if (window._dfcPixelOn && window.fbq) fbq('track', 'StartTrial', { value: 9.99, currency: 'USD' }); } catch (e) {}
+    try { if (window.MC_PIXEL) MC_PIXEL.fireLogConversionEvent('trial_started'); } catch (e) {}
   }
   if (params.get('blueprint') === '1' && params.get('session_id')) {
     const sid = params.get('session_id');
     history.replaceState(null, '', '/app');
     try { if (window._dfcPixelOn && window.fbq) fbq('track', 'Purchase', { value: 19.00, currency: 'USD' }); } catch (e) {}
+    try { if (window.MC_PIXEL) MC_PIXEL.fireLogMoneyEvent('blueprint_purchase', 19.00, 'USD'); } catch (e) {}
     downloadBlueprint(sid).then(ok => {
       if (ok) setTimeout(() => alert('Your Blueprint is downloading.'), 300);
     });
@@ -97,6 +99,7 @@ function wireStatic() {
     try { localStorage.setItem('dfc-consent', 'accepted'); } catch (e) {}
     $('cookie-banner').classList.add('hidden');
     try { if (window.dfcEnableTracking) dfcEnableTracking(); } catch (e) {}
+    try { if (window.dfcEnableManychatPixel) dfcEnableManychatPixel(); } catch (e) {}
   };
   $('cookie-decline').onclick = () => {
     try { localStorage.setItem('dfc-consent', 'declined'); } catch (e) {}
