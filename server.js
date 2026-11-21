@@ -16,6 +16,7 @@ const auth = require('./auth');
 const billing = require('./stripe');
 const P = require('./shared/payoff');
 const { coachReply, CHIPS } = require('./shared/coach');
+const AI = require('./ai-coach');
 const { ACADEMY, buildPath } = require('./shared/academy');
 
 const app = express();
@@ -226,13 +227,28 @@ app.get('/api/plan', auth.requireUser, auth.requireSubscription, requireOnboarde
   res.json({ plan: planFor(req.user.user_id, extra, strategy) });
 });
 
-app.post('/api/chat', auth.requireUser, auth.requireSubscription, requireOnboarded, auth.chatLimiter, (req, res) => {
+app.post('/api/chat', auth.requireUser, auth.requireSubscription, requireOnboarded, auth.chatLimiter, async (req, res) => {
   const message = auth.str(req.body.message, 2000);
   if (!message) return res.status(400).json({ error: 'Type a message first.' });
   const debts = store.getDebts(req.user.user_id).map(d => ({
     id: String(d.id), name: d.name, balance: d.balance, apr: d.apr, min: d.min,
   }));
-  res.json({ reply: coachReply(message, { profile: req.profile, debts }), chips: CHIPS });
+  /* Exact payoff math stays deterministic: the rule-based coach
+     answers first. Only its generic fallback routes to Claude,
+     and any AI failure or missing key falls back to it too. */
+  const ruleReply = coachReply(message, { profile: req.profile, debts });
+  if (!AI.isFallbackReply(ruleReply)) return res.json({ reply: ruleReply, chips: CHIPS });
+  if (!AI.aiConfigured() || !AI.checkAndCount(req.user.user_id)) {
+    return res.json({ reply: ruleReply, chips: CHIPS });
+  }
+  try {
+    const plan = planFor(req.user.user_id);
+    const ai = await AI.askClaude(message, AI.planSummary(req.profile, debts, plan));
+    if (!ai.ok) return res.json({ reply: ruleReply, chips: CHIPS });
+    return res.json({ reply: ai.reply, chips: CHIPS, ai: true });
+  } catch (_) {
+    return res.json({ reply: ruleReply, chips: CHIPS });
+  }
 });
 
 app.get('/api/academy', auth.requireUser, auth.requireSubscription, requireOnboarded, (_req, res) => {
