@@ -346,6 +346,15 @@ app.post('/api/admin/reset-test-state', (req, res) => {
 });
 
 /* ============================================================
+   STANDALONE WIDGET PAGE — the public debt-free-date calculator
+   (no signup). Served at the clean URL; must be registered
+   BEFORE the SPA fallback or the app shell would win.
+   ============================================================ */
+app.get('/debt-free-date', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'debt-free-date.html'));
+});
+
+/* ============================================================
    LEGAL PAGES (DRAFT — pending attorney review)
    Served as full pages; must be registered BEFORE the SPA fallback.
    ============================================================ */
