@@ -1,0 +1,52 @@
+/* DebtFree Coach — /debt-free-date page styles. Moved out of
+   debt-free-date.html so the site's CSP (style-src 'self') allows them.
+   Loaded after /styles.css, same cascade position as the old <style>. */
+  .w-wrap{max-width:560px;margin:0 auto;padding:2rem 1.25rem 3rem}
+  .w-wrap h1{font-size:2rem;margin:.5rem 0 .25rem;text-align:center}
+  .w-sub{text-align:center;color:var(--muted);margin:0 0 1.5rem}
+  .w-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem}
+  .w-card h2{font-size:1.1rem;margin:0 0 .75rem}
+  .debt-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.75rem;padding-bottom:.75rem;border-bottom:1px solid var(--line)}
+  .debt-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+  .debt-row label{font-size:.85rem;color:var(--muted);display:block;margin-bottom:.25rem}
+  .debt-row input{margin-bottom:0}
+  .debt-row .full{grid-column:1 / -1}
+  .rm-btn{background:none;border:none;color:var(--red);font-size:.85rem;cursor:pointer;padding:.25rem 0;text-decoration:underline}
+  .seg{display:inline-flex;gap:.5rem;margin-bottom:.9rem}
+  .seg button{background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:.5rem 1rem;font-size:.95rem;cursor:pointer}
+  .seg button.sel{background:var(--green);color:#04120a;border-color:var(--green);font-weight:700}
+  .res-big{font-size:1.7rem;font-weight:800;text-align:center;margin:.5rem 0}
+  .res-line{text-align:center;font-size:1.05rem;margin:.25rem 0}
+  .res-line b{color:var(--green)}
+  .res-warn{color:var(--red)}
+  .dc-wrap{margin-top:1.25rem;border-top:1px solid var(--line);padding-top:1.25rem}
+  .dc-wrap h3{font-size:1.05rem;margin:0 0 .25rem;text-align:center}
+  .dc-sub{text-align:center;color:var(--muted);font-size:.9rem;margin:0 0 .5rem}
+  .dc-btns{display:grid;gap:.5rem;margin-top:.25rem}
+  .cta-wrap{text-align:center;margin-top:1.25rem}
+  .fineprint{font-size:.78rem;color:var(--muted);margin-top:1.25rem}
+  .example-link{background:none;border:none;color:var(--blue);font-size:.95rem;cursor:pointer;text-decoration:underline;padding:0}
+
+/* Classes below replace this page's former inline style="" attributes
+   (blocked by CSP style-src 'self'). Declarations are verbatim copies of
+   the originals; selectors are scoped so they win over styles.css exactly
+   where the inline attribute used to. JS still toggles visibility via
+   el.style.display, which overrides .dfd-init-hidden when it runs. */
+.w-wrap .dfd-hero-emoji{text-align:center;font-size:3rem}
+.w-wrap .dfd-brand-line{text-align:center;color:var(--muted);margin:0}
+.w-wrap .dfd-example-note{margin:1rem 0 0;font-size:.9rem;color:var(--muted)}
+.w-wrap .dfd-field-label{font-size:.9rem;color:var(--muted);display:block;margin-bottom:.5rem}
+.w-wrap .dfd-h2-gap{margin-top:1rem}
+.w-wrap .dfd-res-gap{margin-top:.75rem}
+.w-wrap .dfd-center{text-align:center}
+.w-wrap .dfd-seg-tight{margin-bottom:.25rem}
+.w-wrap .dfd-full-btn{width:100%}
+.w-wrap .dfd-cta-note{color:var(--muted);margin-bottom:.5rem}
+.w-wrap .dfd-cta-btn{display:block;text-decoration:none;text-align:center}
+.w-wrap .dfd-microtrust{color:var(--muted);font-size:.9rem;margin-top:.5rem}
+.dfd-init-hidden{display:none}
+.dfd-bluelink{color:var(--blue)}
+.cookie-banner.dfd-banner{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-top:1px solid var(--line);padding:1rem 1.25rem}
+.cookie-banner .dfd-banner-text{margin:0 0 .75rem;font-size:.95rem}
+.cookie-banner .dfd-banner-btns{display:flex;gap:.5rem}
+.cookie-banner .dfd-accept{width:auto}
