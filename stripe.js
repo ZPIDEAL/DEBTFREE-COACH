@@ -7,6 +7,7 @@
    ============================================================ */
 'use strict';
 
+const crypto = require('crypto');
 const store = require('./db');
 
 const SECRET = process.env.STRIPE_SECRET_KEY || '';
@@ -250,6 +251,110 @@ async function blueprintDownload(req, res) {
     res.status(502).json({ error: 'Could not generate your Blueprint. Please try again.' });
   }
 }
+/* ---------- standalone Blueprint sale (/debt-free-date, no account) ----------
+   The visitor's calculator numbers are stored server-side under a random
+   token BEFORE checkout; the Stripe session carries only the token. After
+   payment, the download endpoint re-verifies the session with Stripe and
+   generates the PDF from the stored numbers. */
+
+/* Same acceptance rules as the account debt endpoints (server.js). */
+function cleanGuestDebts(list) {
+  if (!Array.isArray(list) || !list.length || list.length > 8) return null;
+  const out = [];
+  for (let i = 0; i < list.length; i++) {
+    const d = list[i] || {};
+    const name = String(d.name || '').trim().slice(0, 80) || 'Debt';
+    const balance = Number(d.balance);
+    const apr = Number(d.apr);
+    const min = Number(d.min);
+    if (!(balance > 0) || !(min > 0) || !(apr >= 0) || apr > 100) return null;
+    if (balance > 1e9 || min > 1e9) return null;
+    out.push({ id: 'd' + i, name, balance, apr, min });
+  }
+  return out;
+}
+
+/* POST /api/guest/blueprint-checkout {name?, debts, extra, strategy} */
+async function guestBlueprintCheckout(req, res) {
+  if (!SECRET) return res.status(503).json({ error: 'Checkout is not configured yet.' });
+  const b = req.body || {};
+  const debts = cleanGuestDebts(b.debts);
+  if (!debts) {
+    return res.status(400).json({
+      error: 'Add at least one debt with a balance and a minimum payment above $0 first.',
+    });
+  }
+  const extraNum = Number(b.extra);
+  const payload = {
+    name: String(b.name || '').trim().slice(0, 80),
+    debts,
+    extra: Number.isFinite(extraNum) && extraNum > 0 ? extraNum : 0,
+    strategy: b.strategy === 'snowball' ? 'snowball' : 'avalanche',
+  };
+  const bp = require('./blueprint');
+  if (!bp.buildBlueprintDataFromParts(payload)) {
+    return res.status(400).json({ error: 'Those numbers do not make a printable plan yet.' });
+  }
+  try {
+    const token = crypto.randomBytes(24).toString('hex');
+    store.createGuestBlueprintOrder(token, payload);
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          unit_amount: BLUEPRINT_CENTS,
+          product_data: { name: 'Debt-Free Date Blueprint (personalized PDF)' },
+        },
+        quantity: 1,
+      }],
+      success_url: `${APP_URL}/debt-free-date?blueprint=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${APP_URL}/debt-free-date?blueprint=cancelled`,
+      metadata: { type: 'blueprint', guest: '1', token },
+    });
+    store.setGuestBlueprintSession(token, session.id);
+    res.json({ url: session.url });
+  } catch (e) {
+    console.error('Guest blueprint checkout error:', e.message);
+    res.status(502).json({ error: 'Could not start checkout. Please try again.' });
+  }
+}
+
+/* GET /api/guest/blueprint?session_id= — verify purchase, stream the PDF.
+   The session_id is the buyer's credential: it is only ever shown to the
+   person who completed (or opened) that checkout. */
+async function guestBlueprintDownload(req, res) {
+  if (!SECRET) return res.status(503).json({ error: 'Billing is not configured yet.' });
+  const sessionId = req.query.session_id;
+  if (!sessionId) return res.status(402).json({ error: 'Blueprint purchase required.' });
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const md = session.metadata || {};
+    const ok = session.payment_status === 'paid'
+      && md.type === 'blueprint' && md.guest === '1' && !!md.token;
+    if (!ok) return res.status(402).json({ error: 'Blueprint purchase required.' });
+    const order = store.getGuestBlueprintOrder(md.token);
+    if (!order || order.stripe_session_id !== session.id) {
+      return res.status(402).json({ error: 'Blueprint purchase required.' });
+    }
+    if (!order.paid) store.markGuestBlueprintPaid(md.token);
+    let payload;
+    try { payload = JSON.parse(order.payload); } catch (_) {
+      return res.status(500).json({ error: 'Your order data could not be read. Please contact support.' });
+    }
+    const bp = require('./blueprint');
+    const data = bp.buildBlueprintDataFromParts(payload);
+    if (!data) return res.status(400).json({ error: 'No debt data to print.' });
+    const pdf = await bp.generateBlueprintPDF(data);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="debt-free-date-blueprint.pdf"');
+    res.send(pdf);
+  } catch (e) {
+    console.error('Guest blueprint download error:', e.message);
+    res.status(502).json({ error: 'Could not generate your Blueprint. Please try again.' });
+  }
+}
+
 /* POST /webhooks/stripe — signature-verified event receiver.
    NOTE: this route must receive the RAW request body (see server.js). */
 async function webhook(req, res) {
@@ -275,6 +380,10 @@ async function webhook(req, res) {
           const userId = Number(md.userId);
           if (md.type === 'blueprint' && userId && session.payment_status === 'paid') {
             store.recordBlueprintPurchase(userId, session.id, session.amount_total || BLUEPRINT_CENTS);
+          }
+          // Standalone /debt-free-date sale: no account, mark the guest order paid.
+          if (md.type === 'blueprint' && md.guest === '1' && md.token && session.payment_status === 'paid') {
+            store.markGuestBlueprintPaid(md.token);
           }
           break;
         }
@@ -327,4 +436,5 @@ module.exports = {
   configured, createCheckout, createPortal, webhook, APP_URL,
   saveOfferStatus, applyDownsell, cancelSubscription,
   blueprintCheckout, blueprintDownload,
+  guestBlueprintCheckout, guestBlueprintDownload,
 };
