@@ -230,4 +230,68 @@
   });
 
   document.getElementById('calc').addEventListener('click', calculate);
+
+  /* Read the calculator's current inputs live (used by the Blueprint buy
+     flow below, so the PDF is built from what is on screen right now —
+     including edits made after the last calculation). */
+  window.DFDReadInputs = function () {
+    var debts = readDebts().filter(function (d) { return d.balance > 0; });
+    var extra = parseFloat(document.getElementById('extra').value) || 0;
+    return { debts: debts, extra: extra < 0 ? 0 : extra, strategy: strategy };
+  };
+})();
+
+/* ---------- Standalone Blueprint purchase ($19, no account) ----------
+   Buy: POST the on-screen numbers to /api/guest/blueprint-checkout and
+   follow the Stripe checkout URL it returns. Return: Stripe sends the
+   buyer back to /debt-free-date?blueprint=1&session_id=... and the
+   download button points at /api/guest/blueprint, which re-verifies
+   the payment with Stripe before generating the PDF. */
+(function () {
+  'use strict';
+  function $(id) { return document.getElementById(id); }
+
+  try {
+    var q = new URLSearchParams(window.location.search);
+    if (q.get('blueprint') === '1' && q.get('session_id')) {
+      $('bp-download').href = '/api/guest/blueprint?session_id=' + encodeURIComponent(q.get('session_id'));
+      var card = $('bp-success');
+      card.style.display = 'block';
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (q.get('blueprint') === 'cancelled') {
+      $('bp-cancelled').style.display = 'block';
+    }
+  } catch (e) { /* no return state to show */ }
+
+  var buyBtn = $('bp-buy');
+  if (!buyBtn) return;
+  buyBtn.addEventListener('click', function () {
+    var err = $('bp-error');
+    function fail(msg) {
+      err.style.display = 'block';
+      err.textContent = msg;
+      buyBtn.disabled = false;
+      buyBtn.textContent = 'Get my Blueprint — $19 →';
+    }
+    err.style.display = 'none';
+    err.textContent = '';
+    if (!window.DFDReadInputs) { fail('Calculate your debt-free date first.'); return; }
+    var input = window.DFDReadInputs();
+    if (!input.debts.length) { fail('Add at least one debt with a balance above $0 first.'); return; }
+    buyBtn.disabled = true;
+    buyBtn.textContent = 'Opening secure checkout…';
+    fetch('/api/guest/blueprint-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        debts: input.debts, extra: input.extra, strategy: input.strategy,
+        name: $('bp-name').value || '',
+      }),
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, j: j }; });
+    }).then(function (out) {
+      if (out.ok && out.j && out.j.url) { window.location.href = out.j.url; return; }
+      fail((out.j && out.j.error) || 'Could not start checkout. Please try again.');
+    }).catch(function () { fail('Could not start checkout. Please try again.'); });
+  });
 })();
