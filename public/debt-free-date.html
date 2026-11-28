@@ -36,7 +36,7 @@
   <div class="dfd-hero-emoji">💰</div>
   <p class="dfd-brand-line">DebtFree Coach</p>
   <h1>Your debt has an expiration date.</h1>
-  <p class="w-sub">Enter your real numbers and see it. No signup. No email. No account. Nothing you type ever leaves this page.</p>
+  <p class="w-sub">Enter your real numbers and see it. No signup. No email. No account. The calculator runs entirely on this page — your numbers only leave it if you choose to buy your Blueprint below.</p>
 
   <div class="w-card">
     <h2>Your debts</h2>
@@ -56,6 +56,19 @@
     </div>
     <button class="btn btn-primary" id="calc" type="button">Show my debt-free date →</button>
     <p id="calc-error" class="error dfd-init-hidden"></p>
+  </div>
+
+  <div class="w-card dfd-init-hidden" id="bp-success">
+    <h2>✅ Your Blueprint is ready</h2>
+    <p class="res-line">Payment confirmed — your personalized PDF was built from the numbers you entered.</p>
+    <div class="cta-wrap">
+      <a class="btn btn-primary dfd-cta-btn" id="bp-download" href="#">⬇️ Download my Blueprint (PDF)</a>
+      <p class="microtrust dfd-microtrust">You can download it again from this page anytime — bookmark it before you close the tab.</p>
+    </div>
+  </div>
+
+  <div class="w-card dfd-init-hidden" id="bp-cancelled">
+    <p class="res-line">Checkout cancelled — no charge was made. Your numbers are still in the calculator below whenever you're ready.</p>
   </div>
 
   <div class="w-card dfd-init-hidden" id="results">
@@ -82,6 +95,15 @@
         <button class="btn btn-ghost dfd-full-btn" id="dc-copy" type="button">📋 Copy caption</button>
       </div>
     </div>
+    <div class="dc-wrap" id="blueprint-box">
+      <h3>📄 Your Debt-Free Date Blueprint — $19</h3>
+      <p class="dc-sub">The full plan as a printable PDF: every debt you just entered, your payoff order, your debt-free date, and the interest your plan saves versus minimums alone.</p>
+      <label for="bp-name" class="dfd-field-label">First name for the PDF (optional)</label>
+      <input id="bp-name" type="text" maxlength="80" placeholder="e.g. Alex" autocomplete="given-name">
+      <button class="btn btn-primary dfd-full-btn" id="bp-buy" type="button">Get my Blueprint — $19 →</button>
+      <p id="bp-error" class="error dfd-init-hidden"></p>
+      <p class="microtrust dfd-microtrust">One-time payment · Secure checkout by Stripe · Buying sends the numbers on this page to our checkout so your PDF can be built — the calculator itself stores nothing.</p>
+    </div>
     <div class="cta-wrap">
       <p class="dfd-cta-note">Want the full month-by-month plan that hits this date — and a coach that keeps you on it?</p>
       <a class="btn btn-primary dfd-cta-btn" href="/?utm_source=debt-free-date-widget&amp;utm_medium=widget&amp;utm_campaign=debt-free-date">Get my full plan — 7-day free trial →</a>
@@ -89,7 +111,7 @@
     </div>
   </div>
 
-  <p class="fineprint">Education only — this is not financial advice, and it is not a personalized recommendation. Results are estimates: they assume your APRs and minimums stay the same, you make every payment on time, and you add no new charges. Your real payoff date depends on your actual creditor terms. DebtFree Coach is a debt-payoff planning and investing-education tool; it does not negotiate with creditors, settle debts, or change your interest rates. Tracking: this page loads the Meta Pixel and the ManyChat Pixel only if you accept cookies — they count the visit for our ads and never see what you type into the calculator. <a href="/terms" class="dfd-bluelink">Terms</a> · <a href="/privacy" class="dfd-bluelink">Privacy</a></p>
+  <p class="fineprint">Education only — this is not financial advice, and it is not a personalized recommendation. Results are estimates: they assume your APRs and minimums stay the same, you make every payment on time, and you add no new charges. Your real payoff date depends on your actual creditor terms. DebtFree Coach is a debt-payoff planning and investing-education tool; it does not negotiate with creditors, settle debts, or change your interest rates. Tracking: this page loads the Meta Pixel and the ManyChat Pixel only if you accept cookies — they count the visit for our ads and never see what you type into the calculator. If you buy the Blueprint, the numbers you entered are sent to our secure checkout so your personalized PDF can be generated and delivered. <a href="/terms" class="dfd-bluelink">Terms</a> · <a href="/privacy" class="dfd-bluelink">Privacy</a></p>
 </div>
 
 <div id="cookie-banner" class="cookie-banner dfd-banner hidden" role="dialog" aria-label="Cookie consent" aria-live="polite">
