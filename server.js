@@ -270,6 +270,12 @@ app.post('/api/billing/downsell', auth.requireUser, billing.applyDownsell);
 app.post('/api/billing/cancel', auth.requireUser, billing.cancelSubscription);
 app.post('/api/billing/blueprint-checkout', auth.requireUser, billing.blueprintCheckout);
 app.get('/api/billing/blueprint', auth.requireUser, billing.blueprintDownload);
+/* Standalone Blueprint sale on the public /debt-free-date page — no account.
+   The visitor's numbers are held server-side under a random token (see
+   stripe.js guestBlueprintCheckout); payment is verified with Stripe
+   before the PDF is generated. */
+app.post('/api/guest/blueprint-checkout', billing.guestBlueprintCheckout);
+app.get('/api/guest/blueprint', billing.guestBlueprintDownload);
 app.get('/api/billing/status', auth.requireUser, (req, res) => {
   res.json({ subscription: auth.subscriptionInfo(req.user.user_id), configured: billing.configured() });
 });
