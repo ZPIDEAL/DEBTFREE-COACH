@@ -25,16 +25,17 @@ function payoffDate(months) {
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
-/* Build the data model for a user's blueprint. Returns null when there is
-   nothing meaningful to print (no profile or no debts). */
-function buildBlueprintData(userId) {
-  const profile = store.getProfile(userId);
-  const debts = store.getDebts(userId).map(d => ({
-    id: String(d.id), name: d.name, balance: d.balance, apr: d.apr, min: d.min,
+/* Build the data model from raw parts ({name, debts, extra, strategy}).
+   Shared by the account flow (data from the DB) and the standalone
+   /debt-free-date guest flow (data the visitor typed into the calculator).
+   Returns null when there is nothing meaningful to print (no debts). */
+function buildBlueprintDataFromParts(input) {
+  const debts = (input.debts || []).map((d, i) => ({
+    id: String(d.id != null ? d.id : i), name: d.name, balance: d.balance, apr: d.apr, min: d.min,
   }));
-  if (!profile || !debts.length) return null;
-  const strategy = profile.strategy === 'snowball' ? 'snowball' : 'avalanche';
-  const extra = Number(profile.extra) || 0;
+  if (!debts.length) return null;
+  const strategy = input.strategy === 'snowball' ? 'snowball' : 'avalanche';
+  const extra = Number(input.extra) || 0;
 
   const planSim = P.simulatePayoff(P.activeDebts(debts), extra, strategy);
   const baseSim = P.simulatePayoff(P.activeDebts(debts), 0, strategy);
@@ -46,7 +47,7 @@ function buildBlueprintData(userId) {
     (planSim.payoff[a.id] || 1e9) - (planSim.payoff[b.id] || 1e9));
 
   return {
-    name: profile.name || 'there',
+    name: input.name || 'there',
     generatedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
     debts, totalDebt, totalMins, extra, strategy,
     plan: {
@@ -65,6 +66,19 @@ function buildBlueprintData(userId) {
       payoffMonth: planSim.payoff[d.id] || null,
     })),
   };
+}
+
+/* Build the data model for an account user's blueprint (profile + debts
+   from the DB). Returns null when there is nothing to print. */
+function buildBlueprintData(userId) {
+  const profile = store.getProfile(userId);
+  if (!profile) return null;
+  const debts = store.getDebts(userId).map(d => ({
+    id: String(d.id), name: d.name, balance: d.balance, apr: d.apr, min: d.min,
+  }));
+  return buildBlueprintDataFromParts({
+    name: profile.name, debts, extra: profile.extra, strategy: profile.strategy,
+  });
 }
 
 function header(doc, data) {
@@ -193,4 +207,4 @@ function generateBlueprintPDF(data) {
   });
 }
 
-module.exports = { buildBlueprintData, generateBlueprintPDF };
+module.exports = { buildBlueprintData, buildBlueprintDataFromParts, generateBlueprintPDF };
