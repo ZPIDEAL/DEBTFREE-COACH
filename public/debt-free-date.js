@@ -46,9 +46,11 @@
   document.getElementById('add-debt').addEventListener('click', function () { addRow(); });
   document.getElementById('try-example').addEventListener('click', function () {
     rowsEl.innerHTML = ''; rowCount = 0;
-    addRow({ name: 'Store card', balance: 4200, apr: 24.99, min: 105 });
-    addRow({ name: 'Credit card', balance: 8900, apr: 18.9, min: 210 });
-    document.getElementById('extra').value = 150;
+    addRow({ name: 'Store card', balance: 3400, apr: 26.99, min: 95 });
+    addRow({ name: 'Credit card', balance: 7800, apr: 21.99, min: 195 });
+    addRow({ name: 'Personal loan', balance: 6500, apr: 11.49, min: 145 });
+    addRow({ name: 'Second card', balance: 4100, apr: 24.99, min: 110 });
+    document.getElementById('extra').value = 200;
     calculate();
   });
 
