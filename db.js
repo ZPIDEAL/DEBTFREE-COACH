@@ -100,6 +100,16 @@ CREATE TABLE IF NOT EXISTS blueprint_purchases (
   amount_cents INTEGER NOT NULL DEFAULT 1900,
   purchased_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+/* Standalone Blueprint sales on the public /debt-free-date page: the
+   visitor has no account, so their calculator numbers are held here
+   under a random token from checkout until the PDF is delivered. */
+CREATE TABLE IF NOT EXISTS guest_blueprint_orders (
+  token TEXT PRIMARY KEY,
+  payload TEXT NOT NULL,
+  stripe_session_id TEXT,
+  paid INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 CREATE INDEX IF NOT EXISTS idx_terms_user ON terms_acceptances(user_id);
 `);
 
@@ -298,6 +308,24 @@ function recordBlueprintPurchase(userId, sessionId, amountCents) {
               VALUES (?, ?, ?)`).run(userId, sessionId, amountCents || 1900);
 }
 
+/* ---- guest (standalone /debt-free-date) blueprint orders ---- */
+function createGuestBlueprintOrder(token, payload) {
+  // Housekeeping: drop abandoned unpaid orders older than a week.
+  db.prepare(`DELETE FROM guest_blueprint_orders
+              WHERE paid = 0 AND created_at < datetime('now', '-7 days')`).run();
+  db.prepare('INSERT INTO guest_blueprint_orders (token, payload) VALUES (?, ?)')
+    .run(token, JSON.stringify(payload));
+}
+const getGuestBlueprintOrder = token =>
+  db.prepare('SELECT * FROM guest_blueprint_orders WHERE token = ?').get(token);
+function setGuestBlueprintSession(token, sessionId) {
+  db.prepare('UPDATE guest_blueprint_orders SET stripe_session_id = ? WHERE token = ?')
+    .run(sessionId, token);
+}
+function markGuestBlueprintPaid(token) {
+  db.prepare('UPDATE guest_blueprint_orders SET paid = 1 WHERE token = ?').run(token);
+}
+
 /* ---- full reset (profile + debts + payments; keeps account & subscription) ---- */
 function resetUserData(userId) {
   const tx = db.transaction(uid => {
@@ -318,5 +346,6 @@ module.exports = {
   recordTermsAcceptance, getTermsAcceptances,
   getSaveOffer, markDownsellUsed, recordCancelReason, markOtoOffered,
   hasBlueprintPurchase, recordBlueprintPurchase,
+  createGuestBlueprintOrder, getGuestBlueprintOrder, setGuestBlueprintSession, markGuestBlueprintPaid,
   resetUserData,
 };
